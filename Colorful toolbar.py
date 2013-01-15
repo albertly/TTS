@@ -44,7 +44,7 @@ icons_dir = os.path.join(mw.pm.addonFolder(), 'color-icons')
 p = {}
 
 def Example_Def(text):
-  text = re.sub("\[sound:.*?\]", "", stripHTML(text.replace("\n", "")).encode('utf-8'))
+	text = re.sub("\[sound:.*?\]", "", stripHTML(text.replace("\n", "")).encode('utf-8'))
 	param = ['ParseYourDictionary.exe', '-d', text]
 
 	p[0] = subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
@@ -143,7 +143,7 @@ def add_tool_bar():
     mw.qt_tool_bar = QToolBar()
     # mw.qt_tool_bar.setAccessibleName('secondary tool bar')
     mw.qt_tool_bar.setObjectName('qt tool bar')
-    mw.qt_tool_bar.setIconSize(QSize(24,24))
+    mw.qt_tool_bar.setIconSize(QSize(32,32))
     mw.qt_tool_bar.setStyleSheet(
         '''QToolBar{
 background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #fff, stop:1 #ddd);
@@ -165,7 +165,7 @@ border-bottom: 1px solid #aaa;
     mw.qt_tool_bar.addAction(add_notes_action)
     mw.qt_tool_bar.addAction(browse_cards_action)
     mw.qt_tool_bar.addAction(statistics_action)
-    mw.qt_tool_bar.addAction("F3", actionF3)
+    mw.qt_tool_bar.addAction("\n F3 \n", actionF3)
     mw.qt_tool_bar.addAction("F4", actionF4)
     mw.qt_tool_bar.addAction("F5", actionF5)
     mw.qt_tool_bar.addAction("Stp", stopProccess)
