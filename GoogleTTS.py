@@ -5,7 +5,7 @@
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
 #
 #   GoogleTTS plugin for Anki 2.0
-version = '0.2.0 Release'
+version = '0.2.1 Release'
 #
 #   Any problems, comments, please post in this thread:  (or email me: arthur@life.net.br )
 #
@@ -362,7 +362,6 @@ class Ui_Dialog1(object):
 
 def GTTS_Factedit_button(self):
 	global language_generator
-	global speech_engine
 	d = QDialog()
 	form = Ui_Dialog1()
 	form.setupUi(d)
@@ -424,10 +423,11 @@ class GTTS_option_menu_Dialog(object):
 		verticalLayout.addWidget(label_21);
 
 		self.combobox1 = QtGui.QComboBox(verticalLayoutWidget);
-		self.combobox1.addItems([d[0] for d in sengines])
+		self.combobox1.addItems([d[0] for d in sengines])		
 		self.combobox1.setCurrentIndex(get_engine_id(speech_engine))
-
+		
 		verticalLayout.addWidget(self.combobox1);
+		
 #################### Speech Engine		
 		label = QtGui.QLabel(verticalLayoutWidget);
 		label.setText("Display options");
@@ -461,13 +461,14 @@ class GTTS_option_menu_Dialog(object):
 
 def GTTS_option_menu():
 	global TTS_language
+	global speech_engine	
 	global askQuestion
 	global askSentence	
 	d = QDialog()
 	form = GTTS_option_menu_Dialog()
 	form.setupUi(d)
-	if d.exec_():
-		TTS_language = slanguages[form.combobox.currentIndex()][0]
+	if d.exec_():		
+		TTS_language = slanguages[form.combobox.currentIndex()][0]		
 		speech_engine = sengines[form.combobox1.currentIndex()][0]
 		askQuestion = form.checkbox.checkState()
 		askSentence = form.checkbox1.checkState()
