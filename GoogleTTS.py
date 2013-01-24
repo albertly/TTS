@@ -5,7 +5,7 @@
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
 #
 #   GoogleTTS plugin for Anki 2.0
-version = '0.2.1 Release'
+version = '0.2.2 Release'
 #
 #   Any problems, comments, please post in this thread:  (or email me: arthur@life.net.br )
 #
@@ -224,7 +224,7 @@ def get_engine_id(engine_code):
 		if d[0]==engine_code:
 			return x
 		x = x + 1		
-		
+
 def playTTSFromText(text):
 	address = []
 	for match in re.findall("\[GTTS:(.*?):(.*?)\]", text, re.M|re.I):
@@ -267,6 +267,7 @@ def playTTSFromText(text):
 
 def TTS_read(text, language=TTS_language):
 	text = re.sub("\[sound:.*?\]", "", stripHTML(text.replace("\n", "")).encode('utf-8'))
+#	utils.showInfo(text)
 	address = TTS_ADDRESS+'?tl='+language+'&q='+ quote_plus(text)
 	if subprocess.mswindows:
 		if speech_engine == "Akapela":
@@ -425,9 +426,9 @@ class GTTS_option_menu_Dialog(object):
 		self.combobox1 = QtGui.QComboBox(verticalLayoutWidget);
 		self.combobox1.addItems([d[0] for d in sengines])		
 		self.combobox1.setCurrentIndex(get_engine_id(speech_engine))
-		
+
 		verticalLayout.addWidget(self.combobox1);
-		
+
 #################### Speech Engine		
 		label = QtGui.QLabel(verticalLayoutWidget);
 		label.setText("Display options");
@@ -438,10 +439,10 @@ class GTTS_option_menu_Dialog(object):
 		self.checkbox.setCheckState(askQuestion);
 		self.checkbox1 = QtGui.QCheckBox('Ask sentence',verticalLayoutWidget);
 		self.checkbox1.setCheckState(askSentence);
-		
+
 		verticalLayout.addWidget(self.checkbox);
 		verticalLayout.addWidget(self.checkbox1);
-		
+
 
 		label_3 = QtGui.QLabel(Dialog)
 		label_3.setGeometry(QtCore.QRect(100, 10, 250, 51))
@@ -472,7 +473,7 @@ def GTTS_option_menu():
 		speech_engine = sengines[form.combobox1.currentIndex()][0]
 		askQuestion = form.checkbox.checkState()
 		askSentence = form.checkbox1.checkState()
-		
+
 a = QAction(mw)
 a.setText("GoogleTTS")
 mw.form.menuTools.addAction(a)
@@ -506,7 +507,7 @@ class GTTS_mp3_mass_generator_Dialog(object):
 		label_2.setText("GoogleTTS will generate MP3 files to all selected facts.");
 
 		verticalLayout.addWidget(label_2);
-		
+
 		self.fieldlist = []
 		for f in mw.col.models.all():
 			for a in f['flds']:
@@ -592,20 +593,20 @@ def generate_audio_files(factIds, language, srcField_name, dstField_name, genera
 		if (c+1)%batch == 0:
 			take_a_break(c, nelements)
 		note = mw.col.getNote(id)
-		
+
 		if not (srcField_name in note.keys() and dstField_name in note.keys()):
 			returnval['fieldname_error'] += 1
 			continue
-		
+
 		mw.progress.update(label="Generating MP3 files...\n%s of %s\n%s" % (c+1, nelements,note[srcField_name]))
-		
+
 		if generate_sound_tags:
 			note[dstField_name] = '[sound:'+ TTS_record(note[srcField_name], language) +']'
 		else:
 			note[dstField_name] = TTS_record(note[srcField_name], language)
 		print note[dstField_name]
 		note.flush()
-		
+
 	return returnval
 
 
@@ -640,7 +641,7 @@ def onGenerate(self):
 
 	self.mw.checkpoint(_("GoogleTTS MP3 Mass Generator"))
 	self.mw.progress.start(immediate=True, label="Generating MP3 files...")
-	
+
 	self.model.beginReset()
 
 	result = generate_audio_files(sf, slanguages[languageField][0], frm.fieldlist[srcField], frm.fieldlist[dstField], generate_sound_tags)
@@ -651,7 +652,7 @@ def onGenerate(self):
 	utils.showInfo((ngettext(
 		"%s note updated",
 		"%s notes updated", nupdated) % (nupdated))+  
-		
+
 		((ngettext(
 		"\n%s fieldname error. A node doesn't have the Source Field '%s' or the Destination Field '%s'",
 		"\n%s fieldname error. Those nodes don't have the Source Field '%s' or the Destination Field '%s'", result['fieldname_error'])
@@ -667,7 +668,7 @@ def newKeyHandler1(self):
     return
 #    utils.showInfo("1")
 #    self.web.eval("alert(document.getElementsByTagName('BODY')[0].innerHTML)")
-	 
+
 ## Check pressed key
 def newKeyHandler(self, evt):
 	pkey = evt.key()
@@ -703,7 +704,7 @@ def Example_read(text):
 
 def actionRu():
     utils.showInfo(self1.card.note()['Translation'])
-	
+
 def GTTSautoread(toread, automatic):
 	if not sound.hasSound(toread):
 		if automatic == TTS_tags_only:
@@ -728,15 +729,17 @@ def GTTS_OnQuestion(self):
 		self.web.eval("document.getElementById('qa').style.visibility='hidden'")
 
 #	self.web.eval("alert(document.getElementsByTagName('BODY')[0].innerHTML)")
-	
+
 def GTTS_OnAnswer(self):
 	stopSpeech()
 	time.sleep(1)	
 	self.web.eval("document.getElementById('qa').style.visibility='visible'")
-	s = self.card.a().replace(self.card.q(),"")
+	stA = stripHTML(self.card.a())
+	stQ = stripHTML(self.card.q())
+	s = stA.replace(stQ,"")	
 	s = s.replace(".",". ")
-	if self.card.template()['name'] == "Forward" :
-		s = self.card.note()['Front'] + ". " + s
+#	if self.card.template()['name'] == "Forward" :
+	s = self.card.note()['Front'] + ". " + s
 	GTTSautoread(s, automaticAnswers)
 
 def stopSpeech():
@@ -746,10 +749,10 @@ def stopSpeech():
 			subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT).communicate()
 		except:
 			pass
-			
+
 def showHidden():    
     self1.web.eval("document.getElementById('qa').style.visibility='visible'")
-	
+
 Reviewer._showQuestion = wrap(Reviewer._showQuestion, newKeyHandler1, "before")
 Reviewer._keyHandler = wrap(Reviewer._keyHandler, newKeyHandler, "before")
 Reviewer._showQuestion = wrap(Reviewer._showQuestion, GTTS_OnQuestion, "after")
