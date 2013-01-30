@@ -5,7 +5,7 @@
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
 #
 #   GoogleTTS plugin for Anki 2.0
-version = '0.2.2 Release'
+version = '0.2.3 Release'
 #
 #   Any problems, comments, please post in this thread:  (or email me: arthur@life.net.br )
 #
@@ -166,7 +166,8 @@ slanguages = [['af', 'Afrikaans', 'cp1252'], #or iso-8859-1
 
 #Address to the TTS service
 TTS_ADDRESS = 'http://translate.google.com/translate_tts'
-
+#Address to the TTS service
+WORDCOUNT_ADDRESS = 'http://www.wordcount.org/dbquery.php?toFind='
 ######################### End of Settings ##################################
 import os, subprocess, re, sys, urllib, time
 from aqt import mw, utils
@@ -268,6 +269,20 @@ def playTTSFromText(text):
 def TTS_read(text, language=TTS_language):
 	text = re.sub("\[sound:.*?\]", "", stripHTML(text.replace("\n", "")).encode('utf-8'))
 #	utils.showInfo(text)
+#	if text.find('Â') != -1 :
+#		utils.showInfo('Found T')
+#		utils.showInfo(text)
+#	zzz = '\u00c2'
+	text = text.replace(chr(194)," ")
+#	if text.find(chr(194)) != -1 :		
+#		utils.showInfo('Found T0')
+#		utils.showInfo(text)
+#	for c in text:
+#		if ord(c) > 190 :
+#			utils.showInfo('Found T1')
+#			utils.showInfo(c)
+#			utils.showInfo(str(ord(c)))
+            	
 	address = TTS_ADDRESS+'?tl='+language+'&q='+ quote_plus(text)
 	if subprocess.mswindows:
 		if speech_engine == "Akapela":
@@ -734,12 +749,18 @@ def GTTS_OnAnswer(self):
 	stopSpeech()
 	time.sleep(1)	
 	self.web.eval("document.getElementById('qa').style.visibility='visible'")
-	stA = stripHTML(self.card.a())
-	stQ = stripHTML(self.card.q())
-	s = stA.replace(stQ,"")	
+	s = self1.card.note()['Front'] + ". " + self1.card.note()['Example']
+#	if self.card.template()['name'] == "Translation" :
+#		s = s + " " + self1.card.note()['Example']
+#	elif self.card.template()['name'] == "Forward" :
+#	else :
+#	
+#	stA = stripHTML(self.card.a())
+#	stQ = stripHTML(self.card.q())
+#	s = stA.replace(stQ,"")	
 	s = s.replace(".",". ")
 #	if self.card.template()['name'] == "Forward" :
-	s = self.card.note()['Front'] + ". " + s
+#	s = self.card.note()['Front'] + ". " + s
 	GTTSautoread(s, automaticAnswers)
 
 def stopSpeech():
@@ -753,7 +774,29 @@ def stopSpeech():
 def showHidden():    
     self1.web.eval("document.getElementById('qa').style.visibility='visible'")
 
+###########  WordCount_get 
+def WordCount_get(text):
+	text = re.sub("\[sound:.*?\]", "", stripHTML(text.replace("\n", " ")).encode('utf-8'))
+	address = WORDCOUNT_ADDRESS + quote_plus(text) + '&method=SEARCH%5FBY%5FNAME'
+	response = urllib.urlopen(address) 
+	data = response.read() 
+	b1 = data.split('&',10)
+	b0 = b1[3].split('=')
+	b2 = b1[2].split('=')
+	utils.showInfo(str(round((float(b0[1])/float(b2[1])) * 100,2)) + "%" )
+	
+def actionCount():
+#	try:
+	word = self1.card.note()['Front'].lower()
+	WordCount_get(word)	
+	utils.showInfo(str(round(100.0 *lines.index(word.encode('utf-8')) / len(lines),2)) + "%")		
+#	except:
+#		pass
+		
 Reviewer._showQuestion = wrap(Reviewer._showQuestion, newKeyHandler1, "before")
 Reviewer._keyHandler = wrap(Reviewer._keyHandler, newKeyHandler, "before")
 Reviewer._showQuestion = wrap(Reviewer._showQuestion, GTTS_OnQuestion, "after")
 Reviewer._showAnswer  = wrap(Reviewer._showAnswer, GTTS_OnAnswer, "after")
+
+lines = [line.strip().lower() for line in open('Book1.csv')]
+line = "0"
