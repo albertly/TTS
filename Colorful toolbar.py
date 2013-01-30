@@ -174,6 +174,7 @@ border-bottom: 1px solid #aaa;
     mw.qt_tool_bar.addAction("Rep", actionRepeat)
     mw.qt_tool_bar.addAction("Shw", showHidden)	
     mw.qt_tool_bar.addAction("Ru", actionRu)
+    mw.qt_tool_bar.addAction("Cnt",actionCount)
 	
 def add_more_tool_bar():
     """
