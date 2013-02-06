@@ -17,6 +17,7 @@ from PyQt4.QtCore import QSize, SIGNAL
 from PyQt4.QtGui import QAction, QIcon, QMenu, QToolBar
 import os
 from GoogleTTS import *
+from Dictionaries import *
 from anki.hooks import wrap, addHook
 from anki.lang import _
 from aqt import mw, clayout
@@ -30,6 +31,7 @@ This Anki2 addon adds a standard tool bar (a QtToolBar) to the Anki
 main window. By default a few buttons (QActions) are added, more can
 be added by the user.
 """
+version = '0.2.4 Release'
 
 __version__ = "1.1.2"
 
@@ -84,7 +86,10 @@ def actionRepeat():
 	Example_Repeat(mw.reviewer.card.note()['Front'])	
 def stopProccess():
 	stopSpeech()
-	
+def actionHint() :
+	st1 = "<style>ul{padding:-10px;margin:-20px;}ul li{padding-left:-20px;}</style>"
+	st = st1 + "<div  style='align:left;white-space: pre-wrap'>" + YourDictionaryParser(mw.reviewer.card.note()['Front']).format() + "</div>"
+	utils.showText(st, type="html")    	
 
 def go_deck_browse():
     """Open the deck browser."""
@@ -186,17 +191,85 @@ border-bottom: 1px solid #aaa;
     mw.qt_tool_bar.addAction(browse_cards_action)
     mw.qt_tool_bar.addAction(statistics_action)
 
-    mw.qt_tool_bar.addAction("\n F3 \n", actionF3)
-    mw.qt_tool_bar.addAction("F4", actionF4)
-    mw.qt_tool_bar.addAction("F5", actionF5)
-    mw.qt_tool_bar.addAction("Stp", stopProccess)
-    mw.qt_tool_bar.addAction("Exmp",actionExample)
-    mw.qt_tool_bar.addAction("Def", actionDef)	    
-    mw.qt_tool_bar.addAction("Rep", actionRepeat)
-    mw.qt_tool_bar.addAction("Shw", showHidden)	
-    mw.qt_tool_bar.addAction("Ru", actionRu)
-    mw.qt_tool_bar.addAction("Cnt",actionCount)
+    F3_action = QAction(mw)
+    F3_action.setText(_(u"Front"))
+    F3_action.setIcon(QIcon(os.path.join(icons_dir, 'F3.png')))
+    F3_action.setToolTip(_(u"Front"))
+    mw.connect(F3_action, SIGNAL("triggered()"), actionF3)
+    mw.qt_tool_bar.addAction(F3_action)
 
+    F4_action = QAction(mw)
+    F4_action.setText(_(u"Definition"))
+    F4_action.setIcon(QIcon(os.path.join(icons_dir, 'F4.png')))
+    F4_action.setToolTip(_(u"Definition"))
+    mw.connect(F4_action, SIGNAL("triggered()"), actionF4)
+    mw.qt_tool_bar.addAction(F4_action)	
+	
+    F5_action = QAction(mw)
+    F5_action.setText(_(u"Example"))
+    F5_action.setIcon(QIcon(os.path.join(icons_dir, 'F5.png')))
+    F5_action.setToolTip(_(u"Example"))
+    mw.connect(F5_action, SIGNAL("triggered()"), actionF5)
+    mw.qt_tool_bar.addAction(F5_action)		
+
+    stop_action = QAction(mw)
+    stop_action.setText(_(u"Stop"))
+    stop_action.setIcon(QIcon(os.path.join(icons_dir, 'stop.png')))
+    stop_action.setToolTip(_(u"Stop"))
+    mw.connect(stop_action, SIGNAL("triggered()"), stopProccess)
+    mw.qt_tool_bar.addAction(stop_action)
+
+
+    Say_action = QAction(mw)
+    Say_action.setText(_(u"Say Example"))
+    Say_action.setIcon(QIcon(os.path.join(icons_dir, 'Say.png')))
+    Say_action.setToolTip(_(u"Say Example"))
+    mw.connect(Say_action, SIGNAL("triggered()"), actionExample)
+    mw.qt_tool_bar.addAction(Say_action)			
+	
+    Def_action = QAction(mw)
+    Def_action.setText(_(u"Definition"))
+    Def_action.setIcon(QIcon(os.path.join(icons_dir, 'dictionary.png')))
+    Def_action.setToolTip(_(u"Definition"))
+    mw.connect(Def_action, SIGNAL("triggered()"), actionDef)
+    mw.qt_tool_bar.addAction(Def_action)		
+	
+    Rep_action = QAction(mw)
+    Rep_action.setText(_(u"Repeat"))
+    Rep_action.setIcon(QIcon(os.path.join(icons_dir, 'Rep.png')))
+    Rep_action.setToolTip(_(u"Repeat"))
+    mw.connect(Rep_action, SIGNAL("triggered()"), actionRepeat)
+    mw.qt_tool_bar.addAction(Rep_action)	   
+
+    Show_action = QAction(mw)
+    Show_action.setText(_(u"Show"))
+    Show_action.setIconText(_(u"Show"))
+    Show_action.setIcon(QIcon(os.path.join(icons_dir, 'lightbulb.png')))
+    Show_action.setToolTip(_(u"Show"))
+    mw.connect(Show_action, SIGNAL("triggered()"), showHidden)
+    mw.qt_tool_bar.addAction(Show_action)	
+
+    Ru_action = QAction(mw)
+    Ru_action.setText(_(u"Russian"))
+    Ru_action.setIcon(QIcon(os.path.join(icons_dir, 'Ru.png')))
+    Ru_action.setToolTip(_(u"Russian"))
+    mw.connect(Ru_action, SIGNAL("triggered()"), actionRu)
+    mw.qt_tool_bar.addAction(Ru_action)		
+
+    count_action = QAction(mw)
+    count_action.setText(_(u"Count"))
+    count_action.setIcon(QIcon(os.path.join(icons_dir, 'calculator.png')))
+    count_action.setToolTip(_(u"Count"))
+    mw.connect(count_action, SIGNAL("triggered()"), actionCount)
+    mw.qt_tool_bar.addAction(count_action)
+
+    hint_action = QAction(mw)
+    hint_action.setText(_(u"Hint"))
+    hint_action.setIcon(QIcon(os.path.join(icons_dir, 'hint.png')))
+    hint_action.setToolTip(_(u"Hint"))
+    mw.connect(hint_action, SIGNAL("triggered()"), actionHint)
+    mw.qt_tool_bar.addAction(hint_action)
+	
 def add_more_tool_bar():
     """
     Add a tool bar at the bottom.
