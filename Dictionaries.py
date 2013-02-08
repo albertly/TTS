@@ -1,4 +1,4 @@
-iimport urllib
+import urllib
 import re
 from HTMLParser import HTMLParser
 from htmlentitydefs import name2codepoint
@@ -12,7 +12,12 @@ class str_cir(str):
 		fashion. '''
 		pattern = re.compile(re.escape(old),re.I)
 		return re.sub(pattern,new,self,count)
-	    
+	 
+class GroupEntities() :
+	def __init__(self, data, fl) :
+		self.entities = data
+		self.fl = fl
+		
 class Entity() :
     def __init__(self) :
         self.meaning = ""
@@ -92,50 +97,58 @@ class MerriamWebsterParser() :
 	def __init__(self, word):
 		self.data = []
 		self.word = word
-		self.words = []
 #http://www.dictionaryapi.com/api/v1/references/learners/xml/root?key=91359489-f427-4143-9465-5b3afadd3d27
 		xml = urllib.urlopen('http://www.dictionaryapi.com/api/v1/references/collegiate/xml/' + word + "?key=181c71fa-4b20-4ec3-83d8-5eb06fe8bdf0").read()
 		root = ET.fromstring(xml)
 		for child in root:
 			if child.find('./ew').text == word :
-				childrens = child.findall('*/dt')
-				self.words = self.words + childrens
-				print "hild     :", child.text, child.tag, child.attrib, child.find('./ew').text
-				for w in childrens :
+				fl = child.find('./fl').text
+				dts = child.findall('*/dt')
+				data = []
+				for dt in dts :
 					entity = Entity()
-					meaning = w.text
-					if type(w.tail) == str : meaning = meaning + " " + w.tail
+					meaning = dt.text
+					if type(dt.tail) == str : meaning = meaning + " " + dt.tail
 					entity.meaning = meaning
-					print "Meaning  :", w.tag, w.text
-					for c in w :
-						if c.tag == 'vi' :
-							example = c.text
-							if type(c.tail) == str : example = example + " " + c.tail
-							entity.setExample(example)
-							print "ex     :", c.text    
-						elif c.tag == 'fw' :
-							meaning = c.text
-							if type(c.tail) == str : meaning = meaning + " " + c.tail
-							entity.meaning = entity.meaning + " " + meaning
-							print "MeaningA  :", c.tag, c.text, c.tail
-						else :
-							print "MeaningR  :", c.tag, c.text, c.tail
-					self.data.append(entity)
+					print "Meaning  :",  entity.meaning
+					vis = dt.findall(".//vi")
+					for vi in vis :
+						example = ""
+						subTemp = vi.find('it') #italic
+						if type(vi.text) == str : example = vi.text
+						if type(subTemp.text) == str : example = example + subTemp.text
+						if type(subTemp.tail) == str : example = example + " " + subTemp.tail
+						if type(vi.tail) == str : example = example + " " + vi.tail
+						entity.setExample(example)
+						print "VI  text   :", vi.text
+						print "VI  tail   :", vi.tail
+						print "VI subTemp  text   :", subTemp.text
+						print "VI subTemp  tail   :", subTemp.tail
+						print "Full example   :", example
+					fw = dt.find('fw')
+					if fw != None :
+						meaning = ""
+						if type(fw.text) == str : meaning =  fw.text
+						if type(fw.tail) == str : meaning = meaning + " " + fw.tail
+						entity.meaning = entity.meaning + " " + meaning
+						print "Meaning Full  :", entity.meaning
+
+					data.append(entity)
+				group = GroupEntities(data, fl)
+				self.data.append(group)
 					
 	def format(self) :
 		st = "<ul>"
-		for e in self.data :
-			st = st + "<li>" +  str_cir(e.meaning).ireplace(self.word, " ___ ") + "</li>"
-			st = st + "<ul>"
-			for ex in e.examples :
-				st = st + "<li>" + str_cir(ex).ireplace(self.word, " ___ ") + "</li>"
-			st = st + "</ul>" 
+		for e1 in self.data :
+			st = st + "<li> " + e1.fl + "<ul>"
+			for e in e1.entities :
+				st = st + "<li>" +  str_cir(e.meaning).ireplace(self.word, " ___ ") + "</li>"
+				st = st + "<ul>"
+				for ex in e.examples :
+					st = st + "<li>" + str_cir(ex).ireplace(self.word, " ___ ") + "</li>"
+				st = st + "</ul>" 
+			st = st + "</ul></li>"
 		st = st + "</ul>"        
 
 		return st
-	def format1(self) :
-		for w in self.words :
-			print "Meaning    :", w.text, w.tail, w.tag
-			for c in w :
-			      print "Meanin1    :", c.text, c.tail, c.tag 
 
