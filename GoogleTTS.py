@@ -5,7 +5,7 @@
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
 #
 #   GoogleTTS plugin for Anki 2.0
-version = '0.2.4 Release'
+version = '0.2.5 Release'
 #
 #   Any problems, comments, please post in this thread:  (or email me: arthur@life.net.br )
 #
@@ -61,14 +61,16 @@ TTS_tags_only, TTS_if_no_tag_read_whole = [1,2]
 TTS_KEY_Q=Qt.Key_F3
 
 # Key to get the [GTTS::] tags in the Answer field pronounced
-TTS_KEY_A=Qt.Key_F4
+#TTS_KEY_A=Qt.Key_F4
 
 # Key to get the whole Question field pronounced, if there is a [GTTS::] tags, it will only read the tags
-TTS_KEY_Q_ALL=Qt.Key_F6
+#TTS_KEY_Q_ALL=Qt.Key_F6
 
 # Key to get the whole Answer field pronounced, if there is a [GTTS::] tags, it will only read the tags
-TTS_KEY_A_ALL=Qt.Key_F7
-
+#TTS_KEY_A_ALL=Qt.Key_F7
+TTS_read_field['Front'] =  Qt.Key_F3
+TTS_read_field['Back'] = Qt.Key_F4
+TTS_read_field['Example'] =  Qt.Key_F5
 
 
 #sorry, the TTS won't recite it automatically when there is a sound file in the Question/Answer
@@ -227,6 +229,7 @@ def get_engine_id(engine_code):
 		x = x + 1		
 
 def playTTSFromText(text):
+	utils.showInfo(text)
 	address = []
 	for match in re.findall("\[GTTS:(.*?):(.*?)\]", text, re.M|re.I):
 		speakit = []
@@ -688,25 +691,10 @@ def newKeyHandler1(self):
 def newKeyHandler(self, evt):
 	pkey = evt.key()
 	if (self.state == 'answer' or self.state == 'question'):
-		if (pkey == TTS_KEY_Q):
-			playTTSFromText(self.card.q())  #read the GTTS tags
-		elif (pkey == TTS_KEY_Q_ALL):
-			if re.findall("\[GTTS:(.*?):(.*?)\]", self.card.q(), re.M|re.I):
-				playTTSFromText(self.card.q()) #read the GTTS tags
-			else:
-				TTS_read(self.card.q(),TTS_language) #read the the whole field
-		elif (self.state=='answer' and pkey == TTS_KEY_A):
-			playTTSFromText(self.card.a()) #read the GTTS tags
-		elif (self.state=='answer' and pkey == TTS_KEY_A_ALL):
-			if re.findall("\[GTTS:(.*?):(.*?)\]", self.card.a(), re.M|re.I):
-				playTTSFromText(self.card.a()) #read the GTTS tags
-			else:
-				TTS_read(self.card.a(),TTS_language)  #read the the whole field
-		else:
-			for key in TTS_read_field:
-				if TTS_read_field[key] == pkey:
-					TTS_read(self.card.note()[key],TTS_language)
-					break
+		for key in TTS_read_field:
+			if TTS_read_field[key] == pkey:
+				TTS_read(self.card.note()[key],TTS_language)
+				break
 	evt.accept()
 
 def Example_read(text):
