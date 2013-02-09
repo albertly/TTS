@@ -1,8 +1,9 @@
 import urllib
 import re
+import xml.etree.ElementTree as ET
 from HTMLParser import HTMLParser
 from htmlentitydefs import name2codepoint
-import xml.etree.ElementTree as ET
+
 
 class str_cir(str):
 	''' A string with a built-in case-insensitive replacement method '''
@@ -69,8 +70,8 @@ class YourDictionaryParser(HTMLParser):
                 print "     attr1:", name, value
                 self.f1 = 1                
             elif name == 'class' and value == 'custom_entry_example':
-                print "     attr2:", name, value
-                self.f2 = 1                
+               print "     attr2:", name, value
+               self.f2 = 1                
                 
     def handle_endtag(self, tag):
         if self.skip == 1 :
@@ -89,49 +90,52 @@ class YourDictionaryParser(HTMLParser):
             if len(data.strip()) > 0 :
                 self.entity.setExample(data)
         elif self.f1 == 1 and self.skip == 0:
-            print "Data1     :", data            
-            self.entity = Entity()
-            self.entity.setMeaning(data)
-        
+            print "Data1     :", data
+            if len(data.strip()) > 0 :
+                    self.entity = Entity()
+                    self.entity.setMeaning(data.strip())
+       
 class MerriamWebsterParser() :
 	def __init__(self, word):
 		self.data = []
 		self.word = word
 #http://www.dictionaryapi.com/api/v1/references/learners/xml/root?key=91359489-f427-4143-9465-5b3afadd3d27
-		xml = urllib.urlopen('http://www.dictionaryapi.com/api/v1/references/collegiate/xml/' + word + "?key=181c71fa-4b20-4ec3-83d8-5eb06fe8bdf0").read()
+#		xml = urllib.urlopen('http://www.dictionaryapi.com/api/v1/references/collegiate/xml/' + word + "?key=181c71fa-4b20-4ec3-83d8-5eb06fe8bdf0").read()
+		xml = urllib.urlopen('http://www.dictionaryapi.com/api/v1/references/learners/xml/' + word + "?key=91359489-f427-4143-9465-5b3afadd3d27").read()
 		root = ET.fromstring(xml)
 		for child in root:
-			if child.find('./ew').text == word :
+			if child.find('./hw').text == word :
 				fl = child.find('./fl').text
-				dts = child.findall('*/dt')
+				dts = child.findall('.//dt')
 				data = []
 				for dt in dts :
 					entity = Entity()
 					meaning = dt.text
 					if type(dt.tail) == str : meaning = meaning + " " + dt.tail
 					entity.meaning = meaning
-					print "Meaning  :",  entity.meaning
+#					print "Meaning  :",  entity.meaning
 					vis = dt.findall(".//vi")
 					for vi in vis :
 						example = ""
-						subTemp = vi.find('it') #italic
 						if type(vi.text) == str : example = vi.text
-						if type(subTemp.text) == str : example = example + subTemp.text
-						if type(subTemp.tail) == str : example = example + " " + subTemp.tail
+						subTemp = vi.find('it') #italic
+						if subTemp != None :
+							if type(subTemp.text) == str : example = example + subTemp.text
+							if type(subTemp.tail) == str : example = example + " " + subTemp.tail
 						if type(vi.tail) == str : example = example + " " + vi.tail
 						entity.setExample(example)
-						print "VI  text   :", vi.text
-						print "VI  tail   :", vi.tail
-						print "VI subTemp  text   :", subTemp.text
-						print "VI subTemp  tail   :", subTemp.tail
-						print "Full example   :", example
+#						print "VI  text   :", vi.text
+#						print "VI  tail   :", vi.tail
+#						print "VI subTemp  text   :", subTemp.text
+#						print "VI subTemp  tail   :", subTemp.tail
+#						print "Full example   :", example
 					fw = dt.find('fw')
 					if fw != None :
 						meaning = ""
 						if type(fw.text) == str : meaning =  fw.text
 						if type(fw.tail) == str : meaning = meaning + " " + fw.tail
 						entity.meaning = entity.meaning + " " + meaning
-						print "Meaning Full  :", entity.meaning
+#						print "Meaning Full  :", entity.meaning
 
 					data.append(entity)
 				group = GroupEntities(data, fl)
@@ -151,4 +155,14 @@ class MerriamWebsterParser() :
 		st = st + "</ul>"        
 
 		return st
+		
+class DictionaryParser() :
+	def __init__(self, word):
+		self.word = word
 
+	def format(self) :
+		merriamWebster = MerriamWebsterParser(self.word)
+		yourDictionary = YourDictionaryParser(self.word)
+		html = "<h3>YourDictionary</h3>" + yourDictionary.format() + "<hr/>" + "<h3>Merriam-Webster</h3>" +  merriamWebster.format()
+		return html
+		
