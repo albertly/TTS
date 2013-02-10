@@ -1,5 +1,7 @@
 # -*- mode: Python ; coding: utf-8 -*-
 # Copyright: Roland Sieker ( ospalh@gmail.com )
+# -*- mode: Python ; coding: utf-8 -*-
+# Copyright: Roland Sieker ( ospalh@gmail.com )
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
 # Images:
 # most icons from Anki1
@@ -31,7 +33,7 @@ This Anki2 addon adds a standard tool bar (a QtToolBar) to the Anki
 main window. By default a few buttons (QActions) are added, more can
 be added by the user.
 """
-version = '0.2.4 Release'
+version = '0.2.5 Release'
 
 __version__ = "1.1.2"
 
@@ -215,6 +217,7 @@ border-bottom: 1px solid #aaa;
     stop_action = QAction(mw)
     stop_action.setText(_(u"Stop"))
     stop_action.setIcon(QIcon(os.path.join(icons_dir, 'stop.png')))
+    stop_action.setShortcut(QKeySequence(Qt.Key_Escape))	
     stop_action.setToolTip(_(u"Stop"))
     mw.connect(stop_action, SIGNAL("triggered()"), stopProccess)
     mw.qt_tool_bar.addAction(stop_action)
@@ -224,6 +227,7 @@ border-bottom: 1px solid #aaa;
     Say_action.setText(_(u"Say Example"))
     Say_action.setIcon(QIcon(os.path.join(icons_dir, 'Say.png')))
     Say_action.setToolTip(_(u"Say Example"))
+    Say_action.setShortcut(QKeySequence(Qt.Key_R))
     mw.connect(Say_action, SIGNAL("triggered()"), actionExample)
     mw.qt_tool_bar.addAction(Say_action)			
 	
@@ -244,6 +248,7 @@ border-bottom: 1px solid #aaa;
     Show_action = QAction(mw)
     Show_action.setText(_(u"Show"))
     Show_action.setIconText(_(u"Show"))
+    Show_action.setShortcut(QKeySequence(Qt.Key_U))
     Show_action.setIcon(QIcon(os.path.join(icons_dir, 'lightbulb.png')))
     Show_action.setToolTip(_(u"Show"))
     mw.connect(Show_action, SIGNAL("triggered()"), showHidden)
