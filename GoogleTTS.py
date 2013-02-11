@@ -5,7 +5,7 @@
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
 #
 #   GoogleTTS plugin for Anki 2.0
-version = '0.2.5 Release'
+version = '0.2.6 Release'
 #
 #   Any problems, comments, please post in this thread:  (or email me: arthur@life.net.br )
 #
@@ -85,8 +85,6 @@ automaticQuestions = TTS_if_no_tag_read_whole    # always recite the whole, but 
 #automaticAnswers = TTS_tags_only                 # recite only [GTTS::] tags in the Answers as it appears
 automaticAnswers = TTS_if_no_tag_read_whole      # always recite the whole, but if there is a [GTTS::], it will only read the tags
 
-
-p = {}
 
 #
 # Keys to get the fields pronounced, case sensitive
@@ -255,16 +253,16 @@ def playTTSFromText(text):
 		param = ['mplayer.exe', '-ao', 'win32', '-slave', '-user-agent', "'Mozilla/5.0'"]
 		param.extend(address)
 		if subprocessing:
-			p[0] = subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+			subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
 		else:
-			p[0] = subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT).communicate()
+			subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT).communicate()
 	else:
 		param = ['mplayer', '-slave', '-user-agent', "'Mozilla/5.0'"]
 		param.extend(address)
 		if subprocessing:
-			p[0] = subprocess.Popen(param, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+			subprocess.Popen(param, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
 		else:
-			p[0] = subprocess.Popen(param, stdin=PIPE, stdout=PIPE, stderr=STDOUT).communicate()
+			subprocess.Popen(param, stdin=PIPE, stdout=PIPE, stderr=STDOUT).communicate()
 
 
 ###########  TTS_read to recite the tts on-the-fly
@@ -293,18 +291,18 @@ def TTS_read(text, language=TTS_language):
 		else:
 			param = ['mplayer.exe', '-ao', 'win32', '-slave', '-user-agent', "'Mozilla/5.0'", address]
 		if subprocessing:
-			p[0] = subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+			subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
 		else:
-			p[0] = subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT).communicate()
+			subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT).communicate()
 	else:
 		if speech_engine == "Akapela":
 			param = ['SayStatic.exe', text]
 		else:
 			param = ['mplayer', '-slave', '-user-agent', "'Mozilla/5.0'", address]
 		if subprocessing:
-			p[0] = subprocess.Popen(param, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+			subprocess.Popen(param, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
 		else:
-			p[0] = subprocess.Popen(param, stdin=PIPE, stdout=PIPE, stderr=STDOUT).communicate()
+			subprocess.Popen(param, stdin=PIPE, stdout=PIPE, stderr=STDOUT).communicate()
 
 
 
@@ -701,9 +699,9 @@ def Example_read(text):
 	text = re.sub("\[sound:.*?\]", "", stripHTML(text.replace("\n", "")).encode('utf-8'))
 	param = ['ParseYourDictionary.exe', text]
 	if subprocessing:
-		p[0] = subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+		subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
 	else:
-		p[0] = subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT).communicate()	
+		subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT).communicate()	
 
 def actionRu():
     utils.showInfo(self1.card.note()['Translation'])
@@ -724,8 +722,11 @@ def GTTS_OnQuestion(self):
 	stopSpeech()
 	time.sleep(1)
 	#utils.showInfo(self.card.model()['name'])
+	self.mw.qt_tool_bar.actions()[16].setDisabled(False)
+	self.mw.qt_tool_bar.actions()[17].setDisabled(True)
 	if self.card.template()['name'] != "Translation" :
 		if self.card.template()['name'] == "Forward" :
+			self.mw.qt_tool_bar.actions()[16].setDisabled(True)
 			Example_read(self.card.q())
 		else :
 			GTTSautoread(self.card.q(), automaticQuestions)
@@ -736,6 +737,30 @@ def GTTS_OnQuestion(self):
 def GTTS_OnAnswer(self):
 	stopSpeech()
 	time.sleep(1)	
+	self.mw.qt_tool_bar.actions()[16].setDisabled(False)
+	
+	tags = mw.reviewer.card.note().stringTags()
+#	utils.showInfo(mw.reviewer.card.note().stringTags())
+	checked = False
+	if self.card.template()['name'] == "Translation" :
+		if tags.find('pt') != -1 :
+			checked = True
+		else :
+			checked = False
+	elif self.card.template()['name'] == "Forward" :
+		if tags.find('pf') != -1 :
+			checked = True
+		else :
+			checked = False
+	elif self.card.template()['name'] == "Reverse" :
+		if tags.find('pb') != -1 :
+			checked = True
+		else :
+			checked = False
+			
+	self.mw.qt_tool_bar.actions()[17].setChecked(checked)
+	self.mw.qt_tool_bar.actions()[17].setDisabled(False)
+	
 	self.web.eval("document.getElementById('qa').style.visibility='visible'")
 	s = self1.card.note()['Front'] + ". " + self1.card.note()['Example']
 #	if self.card.template()['name'] == "Translation" :
