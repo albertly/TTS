@@ -1,7 +1,5 @@
 # -*- mode: Python ; coding: utf-8 -*-
 # Copyright: Roland Sieker ( ospalh@gmail.com )
-# -*- mode: Python ; coding: utf-8 -*-
-# Copyright: Roland Sieker ( ospalh@gmail.com )
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
 # Images:
 # most icons from Anki1
@@ -33,7 +31,7 @@ This Anki2 addon adds a standard tool bar (a QtToolBar) to the Anki
 main window. By default a few buttons (QActions) are added, more can
 be added by the user.
 """
-version = '0.2.5 Release'
+version = '0.2.6 Release'
 
 __version__ = "1.1.2"
 
@@ -50,29 +48,26 @@ show_toggle_last = False
 icons_dir = os.path.join(mw.pm.addonFolder(), 'color-icons')
 
 
-
-p = {}
-
 def Example_Def(text):
 	text = re.sub("\[sound:.*?\]", "", stripHTML(text.replace("\n", "")).encode('utf-8'))
 	param = ['ParseYourDictionary.exe', '-d', text]
 
-	p[0] = subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+	subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
 
 def Example_Repeat(text):
 	text = re.sub("\[sound:.*?\]", "", stripHTML(text.replace("\n", "")).encode('utf-8'))
 	param = ['ParseYourDictionary.exe', '-r', text]
 
-	p[0] = subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+	subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
 		
 		
 def Example_read(text):
 	text = re.sub("\[sound:.*?\]", "", stripHTML(text.replace("\n", "")).encode('utf-8'))
 	param = ['ParseYourDictionary.exe', text]
 	if subprocessing:
-		p[0] = subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+		subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
 	else:
-		p[0] = subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT).communicate()
+		subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT).communicate()
 		
 def actionF3():
 	TTS_read(mw.reviewer.card.note()['Front'])
@@ -92,6 +87,30 @@ def actionHint() :
 	st1 = "<style>ul{padding:-10px;margin:-20px;}ul li{padding-left:-20px;}</style>"
 	st = st1 + "<div  style='align:left;white-space: pre-wrap'>" + YourDictionaryParser(mw.reviewer.card.note()['Front']).format() + "</div>"
 	utils.showText(st, type="html")    	
+
+def actionDefer() :
+	tags = mw.reviewer.card.note().stringTags()
+	if mw.reviewer.card.template()['name'] == "Translation" :
+		if tags.find('pt') == -1 :
+			mw.reviewer.card.note().addTag('pb')
+			mw.reviewer.web.eval("$('#spanTags').html('&#x2639;').show();")
+		else :
+			mw.reviewer.card.note().delTag('pb')
+			mw.reviewer.web.eval("$('#spanTags').hide();")
+	elif mw.reviewer.card.template()['name'] == "Forward" :
+		if tags.find('pf') == -1 :
+			mw.reviewer.card.note().addTag('pf')
+			mw.reviewer.web.eval("$('#spanTags').html('&#x2639;').show();")
+		else :
+			mw.reviewer.card.note().delTag('pf')
+			mw.reviewer.web.eval("$('#spanTags').hide();")
+	elif mw.reviewer.card.template()['name'] == "Reverse" :
+		if tags.find('pb') == -1 :
+			mw.reviewer.card.note().addTag('pb')
+			mw.reviewer.web.eval("$('#spanTags').html('&#x2639;').show();")
+		else :
+			mw.reviewer.card.note().delTag('pb')
+			mw.reviewer.web.eval("$('#spanTags').hide();")
 
 def go_deck_browse():
     """Open the deck browser."""
@@ -218,7 +237,7 @@ border-bottom: 1px solid #aaa;
     stop_action.setText(_(u"Stop"))
     stop_action.setIcon(QIcon(os.path.join(icons_dir, 'stop.png')))
     stop_action.setShortcut(QKeySequence(Qt.Key_Escape))	
-    stop_action.setToolTip(_(u"Stop"))
+    stop_action.setToolTip(_(u"Stop  Esc"))
     mw.connect(stop_action, SIGNAL("triggered()"), stopProccess)
     mw.qt_tool_bar.addAction(stop_action)
 
@@ -226,7 +245,7 @@ border-bottom: 1px solid #aaa;
     Say_action = QAction(mw)
     Say_action.setText(_(u"Say Example"))
     Say_action.setIcon(QIcon(os.path.join(icons_dir, 'Say.png')))
-    Say_action.setToolTip(_(u"Say Example"))
+    Say_action.setToolTip(_(u"Say Example  R"))
     Say_action.setShortcut(QKeySequence(Qt.Key_R))
     mw.connect(Say_action, SIGNAL("triggered()"), actionExample)
     mw.qt_tool_bar.addAction(Say_action)			
@@ -250,14 +269,15 @@ border-bottom: 1px solid #aaa;
     Show_action.setIconText(_(u"Show"))
     Show_action.setShortcut(QKeySequence(Qt.Key_U))
     Show_action.setIcon(QIcon(os.path.join(icons_dir, 'lightbulb.png')))
-    Show_action.setToolTip(_(u"Show"))
+    Show_action.setToolTip(_(u"Show  U"))
     mw.connect(Show_action, SIGNAL("triggered()"), showHidden)
     mw.qt_tool_bar.addAction(Show_action)	
 
     Ru_action = QAction(mw)
     Ru_action.setText(_(u"Russian"))
+    Ru_action.setShortcut(QKeySequence(Qt.Key_T))
     Ru_action.setIcon(QIcon(os.path.join(icons_dir, 'Ru.png')))
-    Ru_action.setToolTip(_(u"Russian"))
+    Ru_action.setToolTip(_(u"Russian  T"))
     mw.connect(Ru_action, SIGNAL("triggered()"), actionRu)
     mw.qt_tool_bar.addAction(Ru_action)		
 
@@ -270,10 +290,21 @@ border-bottom: 1px solid #aaa;
 
     hint_action = QAction(mw)
     hint_action.setText(_(u"Hint"))
+    hint_action.setShortcut(QKeySequence(Qt.Key_H))
     hint_action.setIcon(QIcon(os.path.join(icons_dir, 'hint.png')))
-    hint_action.setToolTip(_(u"Hint"))
+    hint_action.setToolTip(_(u"Hint  U"))
+    hint_action.setObjectName("Hint")
     mw.connect(hint_action, SIGNAL("triggered()"), actionHint)
     mw.qt_tool_bar.addAction(hint_action)
+    
+    defer_action = QAction(mw)
+    defer_action.setText(_(u"Defer"))
+#    defer_action.setShortcut(QKeySequence(Qt.Key_H))
+    defer_action.setIcon(QIcon(os.path.join(icons_dir, 'warning.png')))
+    defer_action.setToolTip(_(u"Defer"))
+    defer_action.setCheckable(True)
+    mw.connect(defer_action, SIGNAL("triggered()"), actionDefer)
+    mw.qt_tool_bar.addAction(defer_action)
 	
 def add_more_tool_bar():
     """
