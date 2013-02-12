@@ -31,7 +31,7 @@ This Anki2 addon adds a standard tool bar (a QtToolBar) to the Anki
 main window. By default a few buttons (QActions) are added, more can
 be added by the user.
 """
-version = '0.2.6 Release'
+version = '0.2.7 Release'
 
 __version__ = "1.1.2"
 
@@ -641,7 +641,7 @@ mw.form.actionPreferences.setIcon(QIcon(os.path.join(icons_dir,
                                                      'preferences.png')))
 
 ## Hide the edit and nmore buttons.
-mw.reviewer._bottomCSS += ".stat {display:none;}"
+mw.reviewer._bottomCSS += ".stat {visibility: hidden;} #time {visibility: visible;}"
 
 
 # Create the menus
