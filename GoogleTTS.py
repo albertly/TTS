@@ -5,7 +5,7 @@
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
 #
 #   GoogleTTS plugin for Anki 2.0
-version = '0.2.6 Release'
+version = '0.2.7 Release'
 #
 #   Any problems, comments, please post in this thread:  (or email me: arthur@life.net.br )
 #
@@ -758,10 +758,14 @@ def GTTS_OnAnswer(self):
 		else :
 			checked = False
 			
+	self.web.eval("document.getElementById('qa').style.visibility='visible'")
+	if checked :
+		self.mw.reviewer.web.eval("$('#spanTags').html('&#x2639;').show();")
+	else :
+		self.mw.reviewer.web.eval("$('#spanTags').hide();")
 	self.mw.qt_tool_bar.actions()[17].setChecked(checked)
 	self.mw.qt_tool_bar.actions()[17].setDisabled(False)
 	
-	self.web.eval("document.getElementById('qa').style.visibility='visible'")
 	s = self1.card.note()['Front'] + ". " + self1.card.note()['Example']
 #	if self.card.template()['name'] == "Translation" :
 #		s = s + " " + self1.card.note()['Example']
