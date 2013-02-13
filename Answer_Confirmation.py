@@ -13,7 +13,7 @@ from anki.hooks import wrap
 
 
 def answerCard_before(self, ease) :
-  l = self._answerButtonList()
+	l = self._answerButtonList()
 	a = [item for item in l if item[0] == ease]
 	if len(a) > 0 :
 		tooltip(a[0][1])
