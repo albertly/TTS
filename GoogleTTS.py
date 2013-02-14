@@ -5,7 +5,7 @@
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
 #
 #   GoogleTTS plugin for Anki 2.0
-version = '0.2.7 Release'
+version = '0.2.8 Release'
 #
 #   Any problems, comments, please post in this thread:  (or email me: arthur@life.net.br )
 #
@@ -183,6 +183,7 @@ from PyQt4 import QtGui,QtCore
 from PyQt4.QtGui import *
 from aqt.reviewer import Reviewer
 
+icons_dir = os.path.join(mw.pm.addonFolder(), 'color-icons')
 language_generator = TTS_language
 file_max_length = 255 # Max filename length for Unix
 
@@ -761,8 +762,11 @@ def GTTS_OnAnswer(self):
 	self.web.eval("document.getElementById('qa').style.visibility='visible'")
 	if checked :
 		self.mw.reviewer.web.eval("$('#spanTags').html('&#x2639;').show();")
+		self.mw.qt_tool_bar.actions()[17].setIcon(QIcon(os.path.join(icons_dir, 'warning_red.png')))
 	else :
 		self.mw.reviewer.web.eval("$('#spanTags').hide();")
+		self.mw.qt_tool_bar.actions()[17].setIcon(QIcon(os.path.join(icons_dir, 'warning.png')))
+		
 	self.mw.qt_tool_bar.actions()[17].setChecked(checked)
 	self.mw.qt_tool_bar.actions()[17].setDisabled(False)
 	
