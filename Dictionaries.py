@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 from HTMLParser import HTMLParser
 from htmlentitydefs import name2codepoint
 
+version = '0.2.10 Release'
 
 class str_cir(str):
 	''' A string with a built-in case-insensitive replacement method '''
@@ -39,7 +40,7 @@ class YourDictionaryParser(HTMLParser):
         self.word = word
         self.data = []
         self.entity = Entity()
-        
+ #       self.feed(urllib.urlopen('http://americanheritage.yourdictionary.com/' + word).read())
         self.feed(urllib.urlopen('http://www.yourdictionary.com/' + word).read())
         
     def format(self) :         
@@ -100,11 +101,11 @@ class MerriamWebsterParser() :
 		self.data = []
 		self.word = word
 #http://www.dictionaryapi.com/api/v1/references/learners/xml/root?key=91359489-f427-4143-9465-5b3afadd3d27
-#		xml = urllib.urlopen('http://www.dictionaryapi.com/api/v1/references/collegiate/xml/' + word + "?key=181c71fa-4b20-4ec3-83d8-5eb06fe8bdf0").read()
-		xml = urllib.urlopen('http://www.dictionaryapi.com/api/v1/references/learners/xml/' + word + "?key=91359489-f427-4143-9465-5b3afadd3d27").read()
+		xml = urllib.urlopen('http://www.dictionaryapi.com/api/v1/references/collegiate/xml/' + word + "?key=181c71fa-4b20-4ec3-83d8-5eb06fe8bdf0").read()
+#		xml = urllib.urlopen('http://www.dictionaryapi.com/api/v1/references/learners/xml/' + word + "?key=91359489-f427-4143-9465-5b3afadd3d27").read()
 		root = ET.fromstring(xml)
 		for child in root:
-			if child.find('./hw').text == word :
+			if child.find('./ew').text == word :
 				fl = child.find('./fl').text
 				dts = child.findall('.//dt')
 				data = []
@@ -136,7 +137,13 @@ class MerriamWebsterParser() :
 						if type(fw.tail) == str : meaning = meaning + " " + fw.tail
 						entity.meaning = entity.meaning + " " + meaning
 #						print "Meaning Full  :", entity.meaning
-
+					sx = dt.find('sx')
+					if sx != None :
+						meaning = ""
+						if type(sx.text) == str : meaning =  sx.text
+						if type(sx.tail) == str : meaning = meaning + " " + sx.tail
+						entity.meaning = entity.meaning + " " + meaning
+#						print "Meaning Full  :", entity.meaning
 					data.append(entity)
 				group = GroupEntities(data, fl)
 				self.data.append(group)
@@ -163,6 +170,6 @@ class DictionaryParser() :
 	def format(self) :
 		merriamWebster = MerriamWebsterParser(self.word)
 		yourDictionary = YourDictionaryParser(self.word)
-		html = "<h3>YourDictionary</h3>" + yourDictionary.format() + "<hr/>" + "<h3>Merriam-Webster</h3>" +  merriamWebster.format()
+		html = "<h3><img src='http://www.yourdictionary.com/favicon.ico'>&nbsp;YourDictionary</h3>" + yourDictionary.format() + "<hr/>" + "<h3><img src='http://www.merriam-webster.com/favicon.ico'>&nbsp;Merriam-Webster</h3>" +  merriamWebster.format()
 		return html
 		
