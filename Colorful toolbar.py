@@ -23,7 +23,8 @@ from anki.lang import _
 from aqt import mw, clayout
 from aqt.reviewer import Reviewer
 from aqt.utils import askUser
-
+from aqt.webview import AnkiWebView
+from aqt.utils import saveGeom, restoreGeom
 """
 Add a standard tool bar to Anki2.
 
@@ -31,7 +32,7 @@ This Anki2 addon adds a standard tool bar (a QtToolBar) to the Anki
 main window. By default a few buttons (QActions) are added, more can
 be added by the user.
 """
-version = '0.2.9 Release'
+version = '0.2.10 Release'
 
 __version__ = "1.1.2"
 
@@ -85,9 +86,28 @@ def stopProccess():
 	stopSpeech()
 def actionHint() :
 	st1 = "<style>ul{padding:-10px;margin:-20px;}ul li{padding-left:-20px;}</style>"
-	st = st1 + "<div  style='align:left;white-space: pre-wrap'>" + YourDictionaryParser(mw.reviewer.card.note()['Front']).format() + "</div>"
-	utils.showText(st, type="html")    	
+	st = "<div  style='align:left;white-space: pre-wrap'>" + DictionaryParser(mw.reviewer.card.note()['Front']).format() + "</div>"
+	showHTML(st)
 
+def showHTML(html):
+	m = QMainWindow(mw)
+	d = QDialog(m)
+	l = QVBoxLayout()
+	l.setMargin(0)
+	w = AnkiWebView()
+	l.addWidget(w)
+	w.stdHtml(html)
+	bb = QDialogButtonBox(QDialogButtonBox.Close)
+	l.addWidget(bb)
+	bb.connect(bb, SIGNAL("rejected()"), d, SLOT("reject()"))
+	d.setLayout(l)
+	d.setWindowModality(Qt.WindowModal)
+	d.resize(500, 400)
+	restoreGeom(d, "htmlview")
+	d.exec_()
+	saveGeom(d, "htmlview")
+
+		
 def actionDefer() :
 	tags = mw.reviewer.card.note().stringTags()
 	if mw.reviewer.card.template()['name'] == "Translation" :
