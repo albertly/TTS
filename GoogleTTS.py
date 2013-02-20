@@ -5,7 +5,7 @@
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
 #
 #   GoogleTTS plugin for Anki 2.0
-version = '0.2.8 Release'
+version = '0.2.9 Release'
 #
 #   Any problems, comments, please post in this thread:  (or email me: arthur@life.net.br )
 #
@@ -721,7 +721,6 @@ def GTTS_OnQuestion(self):
 	global self1
 	self1 = self
 	stopSpeech()
-	time.sleep(1)
 	#utils.showInfo(self.card.model()['name'])
 	self.mw.qt_tool_bar.actions()[16].setDisabled(False)
 	self.mw.qt_tool_bar.actions()[17].setDisabled(True)
@@ -737,7 +736,6 @@ def GTTS_OnQuestion(self):
 
 def GTTS_OnAnswer(self):
 	stopSpeech()
-	time.sleep(1)	
 	self.mw.qt_tool_bar.actions()[16].setDisabled(False)
 	
 	tags = mw.reviewer.card.note().stringTags()
