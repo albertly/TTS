@@ -3,8 +3,11 @@ import re
 import xml.etree.ElementTree as ET
 from HTMLParser import HTMLParser
 from htmlentitydefs import name2codepoint
+from .downloadaudio.downloaders.downloader import AudioDownloader
+from anki.utils import stripHTML
+from aqt import mw, utils
 
-version = '0.2.10 Release'
+version = '0.2.11 Release'
 
 class str_cir(str):
 	''' A string with a built-in case-insensitive replacement method '''
@@ -28,7 +31,26 @@ class Entity() :
         self.meaning = meaning
     def setExample(self, example) :
         self.examples.append(example)
-        
+
+
+class CollinsDictionaryThesaurus(AudioDownloader) :
+    def __init__(self, word):
+        AudioDownloader.__init__(self)
+        self.data = []
+        self.url = 'http://www.collinsdictionary.com/dictionary/american-thesaurus/'
+        word_soup = self.get_soup_from_url(self.url + word)
+        syn = word_soup.findAll(attrs={'class' : 'syn'})
+        for syn_tag in syn:
+            self.data.append(syn_tag.text)
+
+    def format(self) :
+        st = "<span>"
+        for e in self.data :
+           st = st + e + ", "
+        st = st + "</span>"
+        return st
+          
+			
 class YourDictionaryParser(HTMLParser):
     def __init__(self, word):
         HTMLParser.__init__(self)
@@ -105,7 +127,8 @@ class MerriamWebsterParser() :
 #		xml = urllib.urlopen('http://www.dictionaryapi.com/api/v1/references/learners/xml/' + word + "?key=91359489-f427-4143-9465-5b3afadd3d27").read()
 		root = ET.fromstring(xml)
 		for child in root:
-			if child.find('./ew').text == word :
+			ew = child.find('./ew')
+			if ew != None and child.find('./ew').text == word :
 				fl = child.find('./fl').text
 				dts = child.findall('.//dt')
 				data = []
@@ -170,6 +193,7 @@ class DictionaryParser() :
 	def format(self) :
 		merriamWebster = MerriamWebsterParser(self.word)
 		yourDictionary = YourDictionaryParser(self.word)
-		html = "<h3><img src='http://www.yourdictionary.com/favicon.ico'>&nbsp;YourDictionary</h3>" + yourDictionary.format() + "<hr/>" + "<h3><img src='http://www.merriam-webster.com/favicon.ico'>&nbsp;Merriam-Webster</h3>" +  merriamWebster.format()
+		coll = CollinsDictionaryThesaurus(self.word)
+		html = "<h3><img src='http://www.yourdictionary.com/favicon.ico'>&nbsp;YourDictionary</h3>" + yourDictionary.format() + "<hr/>" + "<h3><img src='http://www.merriam-webster.com/favicon.ico'>&nbsp;Merriam-Webster</h3>" +  merriamWebster.format() + "<hr>" + coll.format()
 		return html
 		
