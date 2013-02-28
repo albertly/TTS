@@ -32,7 +32,7 @@ This Anki2 addon adds a standard tool bar (a QtToolBar) to the Anki
 main window. By default a few buttons (QActions) are added, more can
 be added by the user.
 """
-version = '0.2.10 Release'
+version = '0.2.11 Release'
 
 __version__ = "1.1.2"
 
@@ -109,34 +109,39 @@ def showHTML(html):
 
 		
 def actionDefer() :
-	tags = mw.reviewer.card.note().stringTags()
+	n = mw.reviewer.card.note()
+	tags = n.stringTags()
+	action = 0
 	if mw.reviewer.card.template()['name'] == "Translation" :
 		if tags.find('pt') == -1 :
-			mw.reviewer.card.note().addTag('pb')
-			mw.reviewer.web.eval("$('#spanTags').html('&#x2639;').show();")
-			mw.qt_tool_bar.actions()[17].setIcon(QIcon(os.path.join(icons_dir, 'warning_red.png')))
+			n.addTag('pt')
+			action = 1
 		else :
-			mw.reviewer.card.note().delTag('pb')
-			mw.reviewer.web.eval("$('#spanTags').hide();")
-			mw.qt_tool_bar.actions()[17].setIcon(QIcon(os.path.join(icons_dir, 'warning.png')))
+			n.delTag('pt')
+			action = -1
 	elif mw.reviewer.card.template()['name'] == "Forward" :
 		if tags.find('pf') == -1 :
-			mw.reviewer.card.note().addTag('pf')
-			mw.reviewer.web.eval("$('#spanTags').html('&#x2639;').show();")
-			mw.qt_tool_bar.actions()[17].setIcon(QIcon(os.path.join(icons_dir, 'warning_red.png')))
+			n.addTag('pf')
+			action = 1
 		else :
-			mw.reviewer.card.note().delTag('pf')
-			mw.reviewer.web.eval("$('#spanTags').hide();")
-			mw.qt_tool_bar.actions()[17].setIcon(QIcon(os.path.join(icons_dir, 'warning.png')))
+			n.delTag('pf')
+			action = -1
 	elif mw.reviewer.card.template()['name'] == "Reverse" :
 		if tags.find('pb') == -1 :
-			mw.reviewer.card.note().addTag('pb')
-			mw.reviewer.web.eval("$('#spanTags').html('&#x2639;').show();")
-			mw.qt_tool_bar.actions()[17].setIcon(QIcon(os.path.join(icons_dir, 'warning_red.png')))
+			n.addTag('pb')
+			action = 1
 		else :
-			mw.reviewer.card.note().delTag('pb')
-			mw.reviewer.web.eval("$('#spanTags').hide();")
-			mw.qt_tool_bar.actions()[17].setIcon(QIcon(os.path.join(icons_dir, 'warning.png')))
+			n.delTag('pb')
+			action = -1
+			
+	if action == 1 :
+		n.flush()
+		mw.reviewer.web.eval("$('#spanTags').html('&#x2639;').show();")
+		mw.qt_tool_bar.actions()[17].setIcon(QIcon(os.path.join(icons_dir, 'warning_red.png')))
+	elif action == -1 :
+		n.flush()
+		mw.reviewer.web.eval("$('#spanTags').hide();")
+		mw.qt_tool_bar.actions()[17].setIcon(QIcon(os.path.join(icons_dir, 'warning.png')))			
 
 def go_deck_browse():
     """Open the deck browser."""
