@@ -1,13 +1,14 @@
 import urllib
 import re
 import xml.etree.ElementTree as ET
+import anki.js
 from HTMLParser import HTMLParser
 from htmlentitydefs import name2codepoint
 from .downloadaudio.downloaders.downloader import AudioDownloader
 from anki.utils import stripHTML
 from aqt import mw, utils
 
-version = '0.2.11 Release'
+version = '0.2.12 Release'
 
 class str_cir(str):
 	''' A string with a built-in case-insensitive replacement method '''
@@ -194,6 +195,39 @@ class DictionaryParser() :
 		merriamWebster = MerriamWebsterParser(self.word)
 		yourDictionary = YourDictionaryParser(self.word)
 		coll = CollinsDictionaryThesaurus(self.word)
-		html = "<h3><img src='http://www.yourdictionary.com/favicon.ico'>&nbsp;YourDictionary</h3>" + yourDictionary.format() + "<hr/>" + "<h3><img src='http://www.merriam-webster.com/favicon.ico'>&nbsp;Merriam-Webster</h3>" +  merriamWebster.format() + "<hr>" + coll.format()
+		#html = "<h3><img src='http://www.yourdictionary.com/favicon.ico'>&nbsp;YourDictionary</h3>" + yourDictionary.format() + "<hr/>" + "<h3><img src='http://www.merriam-webster.com/favicon.ico'>&nbsp;Merriam-Webster</h3>" +  merriamWebster.format() + "<hr>" + coll.format()
+		html ="""
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title></title>
+	<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.1/themes/base/jquery-ui.css">
+	<script>%s</script>
+	<script>%s</script>
+	<style type="text/css">	
+		.ui-accordion-icons .ui-accordion-header a { padding-left: 2.2em; }
+		.ui-accordion .ui-accordion-header .ui-icon { position: absolute; left: .5em; top: %s; margin-top: -8px; }
+	</style>
+</head>
+<body>""" % (anki.js.jquery, anki.js.ui, '50%')
+
+		html += "<div class='accordion'><h3><a class='f' href='#'><img src='http://www.collinsdictionary.com/favicon.ico'>&nbsp;Collins Thesaurus</a></h3>"
+		html += "<div>" + coll.format() + "</div></div>"
+		
+		html += "<div class='accordion'><h3><a href='#'><img src='http://www.yourdictionary.com/favicon.ico'>&nbsp;YourDictionary</a></h3>"
+		html += "<div>" + yourDictionary.format() + "</div></div>"
+		
+		html += "<div class='accordion'><h3><a href='#'><img src='http://www.merriam-webster.com/favicon.ico'>&nbsp;Merriam-Webster</a></h3>"
+		html += "<div>" + merriamWebster.format() + "</div></div>"
+		
+		html += """
+<script type="text/javascript">
+    $(".accordion").accordion({ collapsible: true, active: false, heightStyle: 'content' });
+	$( ".f" ).click();
+</script>
+ 
+</body>
+		"""
 		return html
 		
