@@ -5,7 +5,7 @@
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
 #
 #   GoogleTTS plugin for Anki 2.0
-version = '0.2.9 Release'
+version = '0.2.10 Release'
 #
 #   Any problems, comments, please post in this thread:  (or email me: arthur@life.net.br )
 #
@@ -182,6 +182,7 @@ from anki.hooks import wrap,addHook
 from PyQt4 import QtGui,QtCore
 from PyQt4.QtGui import *
 from aqt.reviewer import Reviewer
+from aqt.utils import tooltip
 
 icons_dir = os.path.join(mw.pm.addonFolder(), 'color-icons')
 language_generator = TTS_language
@@ -707,7 +708,7 @@ def Example_read(text):
 def actionRu():
     utils.showInfo(self1.card.note()['Translation'])
 
-def GTTSautoread(toread, automatic):
+def GTTSautoread(toread, automatic=automaticQuestions):
 	if not sound.hasSound(toread):
 		if automatic == TTS_tags_only:
 			playTTSFromText(toread)
@@ -761,6 +762,7 @@ def GTTS_OnAnswer(self):
 	if checked :
 		self.mw.reviewer.web.eval("$('#spanTags').html('&#x2639;').show();")
 		self.mw.qt_tool_bar.actions()[17].setIcon(QIcon(os.path.join(icons_dir, 'warning_red.png')))
+		tooltip("Defered")
 	else :
 		self.mw.reviewer.web.eval("$('#spanTags').hide();")
 		self.mw.qt_tool_bar.actions()[17].setIcon(QIcon(os.path.join(icons_dir, 'warning.png')))
