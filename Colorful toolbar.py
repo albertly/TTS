@@ -32,7 +32,7 @@ This Anki2 addon adds a standard tool bar (a QtToolBar) to the Anki
 main window. By default a few buttons (QActions) are added, more can
 be added by the user.
 """
-version = '0.2.14 Release'
+version = '0.2.15 Release'
 
 __version__ = "1.1.2"
 
@@ -48,7 +48,15 @@ show_toggle_last = False
 
 icons_dir = os.path.join(mw.pm.addonFolder(), 'color-icons')
 
+def _GTTS_OnQuestion():
+	stopSpeech()
+	if mw.reviewer.card.template()['name'] != "Translation" :
+		if mw.reviewer.card.template()['name'] == "Forward" :
+			Example_read(mw.reviewer.card.q())
+		else :
+			GTTSautoread(mw.reviewer.card.q())
 
+		
 def Example_Def(text):
 	text = re.sub("\[sound:.*?\]", "", stripHTML(text.replace("\n", "")).encode('utf-8'))
 	param = ['ParseYourDictionary.exe', '-d', text]
@@ -680,11 +688,37 @@ OLD__bottomHTML = mw.reviewer._bottomHTML
 def NEW__bottomHTML() :
     bottomHTML = OLD__bottomHTML()
     bottomHTML = bottomHTML.replace("time = Math.min(maxTime, time)", "time = Math.min(Number.MAX_VALUE, time)")
-    bottomHTML = bottomHTML.replace("if (maxTime == time) {", "if (maxTime <= time) {")
+    bottomHTML = bottomHTML.replace("if (maxTime == time) {", "if (maxTime <= time) { if (maxTime == time) cellBlink(); if (time % 120 == 0) $('#to').click();")
+    bottomHTML = bottomHTML.replace("&#9662;</button>", """&#9662;</button><button id='to' onclick="py.link('timeout');">invisible</button>""")
+    bottomHTML += """
+	<script>
+function cellBlink() {
+
+$("#time").css("background-color", "yellow");
+setTimeout('cellBlink2()', 500);
+}
+function cellBlink2() {
+$("#time").css("background-color", "");
+setTimeout('cellBlink()', 500);
+}
+</script>
+"""
     return bottomHTML
 
 
 mw.reviewer._bottomHTML = NEW__bottomHTML
+
+OLD__linkHandler = mw.reviewer._linkHandler
+
+def NEW__linkHandler(url) :
+    if url == "timeout" :
+        _GTTS_OnQuestion()
+    else :
+        OLD__linkHandler(url)
+
+
+mw.reviewer._linkHandler = NEW__linkHandler
+
 
 # Create the menus
 add_tool_bar()
