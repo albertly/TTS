@@ -9,12 +9,12 @@ from .downloadaudio.downloaders.downloader import AudioDownloader
 from anki.utils import stripHTML, json
 from aqt import mw, utils
 
-version = '0.2.13 Release'
+version = '0.2.14 Release'
 
 class Storage() :
 	def __init__(self, word) :
 		self.word = word
-		self.base = 'c:/user/albert/AppData/Roaming/ParseYourDictionary/ParseYourDictionary/1.0.0.0/'
+		self.base = 'c:/users/albert/AppData/Roaming/ParseYourDictionary/ParseYourDictionary/1.0.0.0/'
 		
 	def getPath(self) :
 		storagePath = self.base + self.word[:2] + '/'
