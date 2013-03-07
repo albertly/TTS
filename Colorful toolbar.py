@@ -32,7 +32,7 @@ This Anki2 addon adds a standard tool bar (a QtToolBar) to the Anki
 main window. By default a few buttons (QActions) are added, more can
 be added by the user.
 """
-version = '0.2.15 Release'
+version = '0.2.16 Release'
 
 __version__ = "1.1.2"
 
@@ -688,18 +688,24 @@ OLD__bottomHTML = mw.reviewer._bottomHTML
 def NEW__bottomHTML() :
     bottomHTML = OLD__bottomHTML()
     bottomHTML = bottomHTML.replace("time = Math.min(maxTime, time)", "time = Math.min(Number.MAX_VALUE, time)")
-    bottomHTML = bottomHTML.replace("if (maxTime == time) {", "if (maxTime <= time) { if (maxTime == time) cellBlink(); if (time % 120 == 0) $('#to').click();")
+    bottomHTML = bottomHTML.replace("if (maxTime == time) {", "if (maxTime <= time) { if ((maxTime * 2) == time) cellBlink(); if (time % 120 == 0) $('#to').click();")
     bottomHTML = bottomHTML.replace("&#9662;</button>", """&#9662;</button><button id='to' onclick="py.link('timeout');">invisible</button>""")
     bottomHTML += """
 	<script>
-function cellBlink() {
 
+function cellBlink() {
+if (maxTime <= time) {
 $("#time").css("background-color", "yellow");
 setTimeout('cellBlink2()', 500);
 }
+else {
+$("#time").css("background-color", "");
+}
+}
 function cellBlink2() {
 $("#time").css("background-color", "");
-setTimeout('cellBlink()', 500);
+if (maxTime <= time)
+	setTimeout('cellBlink()', 500);
 }
 </script>
 """
