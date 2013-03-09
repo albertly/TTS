@@ -9,12 +9,12 @@ from .downloadaudio.downloaders.downloader import AudioDownloader
 from anki.utils import stripHTML, json
 from aqt import mw, utils
 
-version = '0.2.14 Release'
+version = '0.2.16 Release'
 
 class Storage() :
 	def __init__(self, word) :
 		self.word = word
-		self.base = 'c:/users/albert/AppData/Roaming/ParseYourDictionary/ParseYourDictionary/1.0.0.0/'
+		self.base = 'c:/users/olya/AppData/Roaming/ParseYourDictionary/ParseYourDictionary/1.0.0.0/'
 		
 	def getPath(self) :
 		storagePath = self.base + self.word[:2] + '/'
@@ -194,7 +194,82 @@ class YourDictionaryParser(HTMLParser):
                     self.something_to_dump = True
                     self.entity = Entity()
                     self.entity.setMeaning(data.strip())
-       
+					
+class MerriamWebsterThesaurusParser() :
+	def __init__(self, word):
+		self.data = []
+		self.word = word
+		self.xml = ""
+		if not self.load() :
+			self.xml = urllib.urlopen('http://www.dictionaryapi.com/api/v1/references/thesaurus/xml/' + word + "?key=ebaacac2-31ed-4e7a-96be-463a80ad5770").read()
+			if len(self.xml) > 0 : self.dump()
+			
+		root = ET.fromstring(self.xml)
+		for child in root:
+			hw = child.find('./term/hw')
+			if hw != None and child.find('./term/hw').text == word :
+				fl = child.find('./fl').text
+				senss = child.findall('./sens')
+				data = []
+				for sens in senss :
+					entity = Entity()
+					
+					mc = sens.find('./mc')
+					meaning =  mc.text
+					subTemp = mc.findall('./it') #italic
+					for it in subTemp :
+						if it != None :
+							if type(it.text) == str : meaning += it.text
+							if type(it.tail) == str : meaning += it.tail
+					if type(mc.tail) == str : meaning += mc.tail
+					entity.meaning = meaning
+					
+					syn = sens.find('./syn')
+					synonims = '<b>Synonyms:&nbsp;</b>' + sens.find('./syn').text
+					subTemp = syn.findall('it') #italic
+					for it in subTemp :
+						if it != None :
+							if type(it.text) == str : synonims += it.text
+							if type(it.tail) == str : synonims += it.tail
+					if type(syn.tail) == str : synonims += syn.tail
+					entity.examples.append(synonims)
+					
+					rel = '<b>Related Words:&nbsp;</b>' + sens.find('./rel').text
+					entity.examples.append(rel)
+
+					self.data.append(entity)
+
+	def dump(self) :
+		fp = Storage(self.word).getPath() + self.word + '.mwt'
+
+		with open(fp, 'w') as f:
+			f.write(self.xml)
+
+	def load(self) :
+		fp = Storage(self.word).getPath() + self.word + '.mwt'
+		if os.path.exists(fp) :
+			with open(fp, 'r') as f:
+				self.xml = f.read() 
+			return True
+		else :
+			return False
+
+	def format(self) :
+		st = "<ul>"
+
+		for e in self.data :
+			st = st + "<li> "
+			st = st + "<h4>" +  str_cir(e.meaning).ireplace(self.word, " ___ ") + "</h4>"
+			
+			for ex in e.examples :
+				st = st + "<p>" +  str_cir(ex).ireplace(self.word, " ___ ") + "</p>"
+			
+			st = st + "</li> "
+
+		st = st + "</ul>"    
+
+		return st
+		
 class MerriamWebsterParser() :
 	def __init__(self, word):
 		self.data = []
@@ -268,7 +343,7 @@ class DictionaryParser() :
 		self.word = word
 
 	def format(self) :
-		merriamWebster = MerriamWebsterParser(self.word)
+		merriamWebster = MerriamWebsterThesaurusParser(self.word)
 		yourDictionary = YourDictionaryParser(self.word)
 		coll = CollinsDictionaryThesaurus(self.word)
 		#html = "<h3><img src='http://www.yourdictionary.com/favicon.ico'>&nbsp;YourDictionary</h3>" + yourDictionary.format() + "<hr/>" + "<h3><img src='http://www.merriam-webster.com/favicon.ico'>&nbsp;Merriam-Webster</h3>" +  merriamWebster.format() + "<hr>" + coll.format()
@@ -282,8 +357,13 @@ class DictionaryParser() :
 	<script>%s</script>
 	<script>%s</script>
 	<style type="text/css">	
+
 		.ui-accordion-icons .ui-accordion-header a { padding-left: 2.2em; }
 		.ui-accordion .ui-accordion-header .ui-icon { position: absolute; left: .5em; top: %s; margin-top: -8px; }
+		ul { padding-left: 0px;}
+		li {
+				padding-left: 5px;
+			}
 	</style>
 </head>
 <body>""" % (anki.js.jquery, anki.js.ui, '50%')
@@ -294,8 +374,8 @@ class DictionaryParser() :
 		html += "<div class='accordion'><h3><a href='#'><img src='http://www.yourdictionary.com/favicon.ico'>&nbsp;YourDictionary</a></h3>"
 		html += "<div>" + yourDictionary.format() + "</div></div>"
 
-#		html += "<div class='accordion'><h3><a href='#'><img src='http://www.merriam-webster.com/favicon.ico'>&nbsp;Merriam-Webster</a></h3>"
-#		html += "<div>" + merriamWebster.format() + "</div></div>"
+		html += "<div class='accordion'><h3><a href='#'><img src='http://www.merriam-webster.com/favicon.ico'>&nbsp;Merriam-Webster</a></h3>"
+		html += "<div>" + merriamWebster.format() + "</div></div>"
 
 		html += """
 <script type="text/javascript">
