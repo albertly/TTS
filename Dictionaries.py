@@ -3,18 +3,19 @@ import urllib
 import re
 import xml.etree.ElementTree as ET
 import anki.js
+import codecs
 from HTMLParser import HTMLParser
 from htmlentitydefs import name2codepoint
 from .downloadaudio.downloaders.downloader import AudioDownloader
 from anki.utils import stripHTML, json
 from aqt import mw, utils
 
-version = '0.2.16 Release'
+version = '0.2.18 Release'
 
 class Storage() :
 	def __init__(self, word) :
 		self.word = word
-		self.base = 'c:/users/olya/AppData/Roaming/ParseYourDictionary/ParseYourDictionary/1.0.0.0/'
+		self.base = 'c:/users/albert/AppData/Roaming/ParseYourDictionary/ParseYourDictionary/1.0.0.0/'
 		
 	def getPath(self) :
 		storagePath = self.base + self.word[:2] + '/'
@@ -144,11 +145,11 @@ class YourDictionaryParser(HTMLParser):
     def format(self) :         
         st = "<ul>"
         for e in self.data :
-          st = st + "<li>" +  str_cir(e.meaning).ireplace(self.word, " ___ ") + "</li>"
-          st = st + "<ul>"
+          st = st + "<li>" +  str_cir(e.meaning).ireplace(self.word, " ___ ") 
+#          st = st + "<ul>"
           for ex in e.examples :
-            st = st + "<li>" + str_cir(ex).ireplace(self.word, " ___ ") + "</li>"
-          st = st + "</ul>" 
+            st = st + "<p style='margin-left: 20px'>" + str_cir(ex).ireplace(self.word, " ___ ") + "</p>"
+          st = st + "</li>" 
         st = st + "</ul>"        
 
         return st
@@ -206,7 +207,7 @@ class MerriamWebsterThesaurusParser() :
 			
 		root = ET.fromstring(self.xml)
 		for child in root:
-			hw = child.find('./term/hw')
+			hw = child.find('./term/hw') #va
 			if hw != None and child.find('./term/hw').text == word :
 				fl = child.find('./fl').text
 				senss = child.findall('./sens')
@@ -225,7 +226,8 @@ class MerriamWebsterThesaurusParser() :
 					entity.meaning = meaning
 					
 					syn = sens.find('./syn')
-					synonims = '<b>Synonyms:&nbsp;</b>' + sens.find('./syn').text
+					#'<b>Synonyms:&nbsp;</b>'
+					synonims =  sens.find('./syn').text
 					subTemp = syn.findall('it') #italic
 					for it in subTemp :
 						if it != None :
@@ -234,7 +236,7 @@ class MerriamWebsterThesaurusParser() :
 					if type(syn.tail) == str : synonims += syn.tail
 					entity.examples.append(synonims)
 					
-					rel = '<b>Related Words:&nbsp;</b>' + sens.find('./rel').text
+					rel = '<i>Related Words:&nbsp;</i>' + sens.find('./rel').text
 					entity.examples.append(rel)
 
 					self.data.append(entity)
@@ -248,7 +250,7 @@ class MerriamWebsterThesaurusParser() :
 	def load(self) :
 		fp = Storage(self.word).getPath() + self.word + '.mwt'
 		if os.path.exists(fp) :
-			with open(fp, 'r') as f:
+			with codecs.open(fp, 'r') as f:
 				self.xml = f.read() 
 			return True
 		else :
@@ -256,17 +258,16 @@ class MerriamWebsterThesaurusParser() :
 
 	def format(self) :
 		st = "<ul>"
-
 		for e in self.data :
-			st = st + "<li> "
-			st = st + "<h4>" +  str_cir(e.meaning).ireplace(self.word, " ___ ") + "</h4>"
+			st += "<li> "
+			st +=    str_cir(e.meaning.encode('ascii','replace')).ireplace(self.word, " ___ ") 
 			
 			for ex in e.examples :
-				st = st + "<p>" +  str_cir(ex).ireplace(self.word, " ___ ") + "</p>"
+				st +=  "<p style='margin-left: 20px'>" +  str_cir(ex.encode('ascii','replace')).ireplace(self.word, " ___ ") + "</p>"
 			
-			st = st + "</li> "
+			st +=  "</li> "
 
-		st = st + "</ul>"    
+		st += "</ul>"    
 
 		return st
 		
@@ -274,8 +275,9 @@ class MerriamWebsterParser() :
 	def __init__(self, word):
 		self.data = []
 		self.word = word
+#		84ffb629-a7c3-4512-9c3c-a520c79ded19 (albert@gmail) 181c71fa-4b20-4ec3-83d8-5eb06fe8bdf0 (albertly@yandex)
 #http://www.dictionaryapi.com/api/v1/references/learners/xml/root?key=91359489-f427-4143-9465-5b3afadd3d27
-		xml = urllib.urlopen('http://www.dictionaryapi.com/api/v1/references/collegiate/xml/' + word + "?key=181c71fa-4b20-4ec3-83d8-5eb06fe8bdf0").read()
+		xml = urllib.urlopen('http://www.dictionaryapi.com/api/v1/references/collegiate/xml/' + word + "?key=84ffb629-a7c3-4512-9c3c-a520c79ded19").read()
 #		xml = urllib.urlopen('http://www.dictionaryapi.com/api/v1/references/learners/xml/' + word + "?key=91359489-f427-4143-9465-5b3afadd3d27").read()
 		root = ET.fromstring(xml)
 		for child in root:
@@ -386,3 +388,6 @@ class DictionaryParser() :
 </body>
 		"""
 		return html
+		
+
+
