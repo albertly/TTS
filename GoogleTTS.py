@@ -5,7 +5,7 @@
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
 #
 #   GoogleTTS plugin for Anki 2.0
-version = '0.2.10 Release'
+version = '0.2.11 Release'
 #
 #   Any problems, comments, please post in this thread:  (or email me: arthur@life.net.br )
 #
@@ -725,12 +725,23 @@ def GTTS_OnQuestion(self):
 	#utils.showInfo(self.card.model()['name'])
 	self.mw.qt_tool_bar.actions()[16].setDisabled(False)
 	self.mw.qt_tool_bar.actions()[17].setDisabled(True)
+	self.mw.qt_tool_bar.actions()[11].setDisabled(True)
+	self.mw.qt_tool_bar.actions()[10].setDisabled(True)
+	self.mw.qt_tool_bar.actions()[7].setDisabled(True)
+	self.mw.qt_tool_bar.actions()[8].setDisabled(True)
+	self.mw.qt_tool_bar.actions()[6].setDisabled(True)
 	if self.card.template()['name'] != "Translation" :
+		self.mw.qt_tool_bar.actions()[14].setDisabled(True)
 		if self.card.template()['name'] == "Forward" :
 			self.mw.qt_tool_bar.actions()[16].setDisabled(True)
+			self.mw.qt_tool_bar.actions()[7].setDisabled(True)
+			self.mw.qt_tool_bar.actions()[10].setDisabled(False)
+			self.mw.qt_tool_bar.actions()[8].setDisabled(False)
+			self.mw.qt_tool_bar.actions()[6].setDisabled(False)
 			Example_read(self.card.q())
 		else :
 			GTTSautoread(self.card.q(), automaticQuestions)
+			self.mw.qt_tool_bar.actions()[7].setDisabled(False)
 		self.web.eval("document.getElementById('qa').style.visibility='hidden'")
 
 #	self.web.eval("alert(document.getElementsByTagName('BODY')[0].innerHTML)")
@@ -738,7 +749,12 @@ def GTTS_OnQuestion(self):
 def GTTS_OnAnswer(self):
 	stopSpeech()
 	self.mw.qt_tool_bar.actions()[16].setDisabled(False)
-	
+	self.mw.qt_tool_bar.actions()[14].setDisabled(False)
+	self.mw.qt_tool_bar.actions()[10].setDisabled(False)
+	self.mw.qt_tool_bar.actions()[11].setDisabled(False)
+	self.mw.qt_tool_bar.actions()[8].setDisabled(False)
+	self.mw.qt_tool_bar.actions()[7].setDisabled(False)
+	self.mw.qt_tool_bar.actions()[6].setDisabled(False)
 	tags = mw.reviewer.card.note().stringTags()
 #	utils.showInfo(mw.reviewer.card.note().stringTags())
 	checked = False
