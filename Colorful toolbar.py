@@ -32,7 +32,7 @@ This Anki2 addon adds a standard tool bar (a QtToolBar) to the Anki
 main window. By default a few buttons (QActions) are added, more can
 be added by the user.
 """
-version = '0.2.16 Release'
+version = '0.2.18 Release'
 
 __version__ = "1.1.2"
 
@@ -92,13 +92,18 @@ def actionRepeat():
 	Example_Repeat(mw.reviewer.card.note()['Front'])	
 def stopProccess():
 	stopSpeech()
-def actionHint() :
+def actionHint(note=False) :
 #	st1 = "<style>ul{padding:-10px;margin:-20px;}ul li{padding-left:-20px;}</style>"
 #	st = "<div  style='align:left;white-space: pre-wrap'>" + DictionaryParser(mw.reviewer.card.note()['Front']).format() + "</div>"
-	st = DictionaryParser(mw.reviewer.card.note()['Front']).format()
-	showHTML(st)
+	st = ""
+	if not note :
+		st = DictionaryParser(mw.reviewer.card.note()['Front']).format()
+		showHTML(st)
+	else:
+		st = DictionaryParser(note['Front']).format()
+		showHTML(st,Qt.NonModal)
 
-def showHTML(html):
+def showHTML(html, modality=Qt.WindowModal):
 	m = QMainWindow(mw)
 	d = QDialog(m)
 	l = QVBoxLayout()
@@ -109,11 +114,14 @@ def showHTML(html):
 	l.addWidget(bb)
 	bb.connect(bb, SIGNAL("rejected()"), d, SLOT("reject()"))
 	d.setLayout(l)
-	d.setWindowModality(Qt.WindowModal)
+	d.setWindowModality(modality)
 	d.resize(500, 400)
 	restoreGeom(d, "htmlview")
 	w.stdHtml(html)
-	d.exec_()
+	if modality == Qt.WindowModal :
+		d.exec_()
+	else :
+		d.show()
 	saveGeom(d, "htmlview")
 
 		
@@ -688,7 +696,7 @@ OLD__bottomHTML = mw.reviewer._bottomHTML
 def NEW__bottomHTML() :
     bottomHTML = OLD__bottomHTML()
     bottomHTML = bottomHTML.replace("time = Math.min(maxTime, time)", "time = Math.min(Number.MAX_VALUE, time)")
-    bottomHTML = bottomHTML.replace("if (maxTime == time) {", "if (maxTime <= time) { if ((maxTime * 2) == time) cellBlink(); if (time % 120 == 0) $('#to').click();")
+    bottomHTML = bottomHTML.replace("if (maxTime == time) {", "if (maxTime <= time) { if ((maxTime * 3) == time) cellBlink(); if (time % 300 == 0) $('#to').click();")
     bottomHTML = bottomHTML.replace("&#9662;</button>", """&#9662;</button><button id='to' onclick="py.link('timeout');">invisible</button>""")
     bottomHTML += """
 	<script>
@@ -748,3 +756,18 @@ addHook("reviewCleanup", next_card_toggle_off)
 
 addHook("unloadProfile", save_toolbars_visible)
 addHook("profileLoaded", load_toolbars_visible)
+
+def actionAddHint(note) :
+	st = DictionaryParser(note['Front']).format()
+	showHTML(st, Qt.NonModal)
+	
+def editor_add_dictionary_button(self):
+    """Add the download button to the editor"""
+    od_button = self._addButton("open_dic",
+                                lambda self=self:
+                                    actionHint(self.note),
+                                tip=u"Open Dictionary...", text=" ")
+    od_button.setIcon(QIcon(os.path.join(icons_dir,
+                                         'hint.png')))
+										 
+addHook("setupEditorButtons", editor_add_dictionary_button)
