@@ -5,7 +5,7 @@
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
 #
 #   GoogleTTS plugin for Anki 2.0
-version = '0.2.11 Release'
+version = '0.2.12 Release'
 #
 #   Any problems, comments, please post in this thread:  (or email me: arthur@life.net.br )
 #
@@ -733,6 +733,7 @@ def GTTS_OnQuestion(self):
 	if self.card.template()['name'] != "Translation" :
 		self.mw.qt_tool_bar.actions()[14].setDisabled(True)
 		if self.card.template()['name'] == "Forward" :
+			self.mw.qt_tool_bar.actions()[18].setDisabled(True)
 			self.mw.qt_tool_bar.actions()[16].setDisabled(True)
 			self.mw.qt_tool_bar.actions()[7].setDisabled(True)
 			self.mw.qt_tool_bar.actions()[10].setDisabled(False)
@@ -748,6 +749,7 @@ def GTTS_OnQuestion(self):
 
 def GTTS_OnAnswer(self):
 	stopSpeech()
+	self.mw.qt_tool_bar.actions()[18].setDisabled(False)
 	self.mw.qt_tool_bar.actions()[16].setDisabled(False)
 	self.mw.qt_tool_bar.actions()[14].setDisabled(False)
 	self.mw.qt_tool_bar.actions()[10].setDisabled(False)
