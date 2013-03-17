@@ -10,7 +10,7 @@ from .downloadaudio.downloaders.downloader import AudioDownloader
 from anki.utils import stripHTML, json
 from aqt import mw, utils
 
-version = '0.2.18 Release'
+version = '0.2.20 Release'
 
 class Storage() :
 	def __init__(self, word) :
@@ -61,6 +61,39 @@ class Entity() :
         arr_entity = json.loads(json_entity)
         self.meaning = json.loads(arr_entity[0])
         self.examples = json.loads(arr_entity[1])
+		
+class CollinsDictionaryCommonness(AudioDownloader) :
+    def __init__(self, word):
+        self.data = ''
+        self.word = word
+        AudioDownloader.__init__(self)
+        self.icon_url = 'http://www.collinsdictionary.com/'
+        self.url = 'http://www.collinsdictionary.com/dictionary/american/'
+        if not self.load() :
+           word_soup = self.get_soup_from_url(self.url + word)
+           commonness = word_soup.find(attrs={'class' : 'commonness_image'})
+           if commonness != None :
+              self.data = commonness.prettify()
+              if len(self.data) > 0 :
+                 self.dump()
+
+    def format(self) :
+        return "<base href='" + self.icon_url + "' target='_blank'>" +  self.data.replace("<img", "<img align='right' ")
+
+    def dump(self) :
+        fp = Storage(self.word).getPath() + self.word + '.cdc'
+
+        with open(fp, 'w') as f:
+             f.write(self.data)
+
+    def load(self) :
+        fp = Storage(self.word).getPath() + self.word + '.cdc'
+        if os.path.exists(fp) :
+            with open(fp, 'r') as f:
+                self.data = f.read()
+            return True
+        else :
+            return False
 
 class CollinsDictionaryThesaurus(AudioDownloader) :
     def __init__(self, word):
@@ -201,14 +234,22 @@ class MerriamWebsterThesaurusParser() :
 		self.data = []
 		self.word = word
 		self.xml = ""
+		dump_me = False
 		if not self.load() :
 			self.xml = urllib.urlopen('http://www.dictionaryapi.com/api/v1/references/thesaurus/xml/' + word + "?key=ebaacac2-31ed-4e7a-96be-463a80ad5770").read()
-			if len(self.xml) > 0 : self.dump()
+			dump_me = True
 			
 		root = ET.fromstring(self.xml)
 		for child in root:
 			hw = child.find('./term/hw') #va
-			if hw != None and child.find('./term/hw').text == word :
+			found1 = hw != None and child.find('./term/hw').text == word
+			if not found1 :
+				va = child.find('./vr/va')
+				found1 = va != None and child.find('./vr/va').text == word
+			if found1 :
+				if dump_me :
+					self.dump()
+					dump_me = False
 				fl = child.find('./fl').text
 				senss = child.findall('./sens')
 				data = []
@@ -231,8 +272,9 @@ class MerriamWebsterThesaurusParser() :
 					subTemp = syn.findall('it') #italic
 					for it in subTemp :
 						if it != None :
-							if type(it.text) == str : synonims += it.text
-							if type(it.tail) == str : synonims += it.tail
+							
+							if type(it.text) == str or type(it.text) == unicode : synonims += it.text.encode('ascii','replace')
+							if type(it.tail) == str or type(it.tail) == unicode : synonims += it.tail.encode('ascii','replace')
 					if type(syn.tail) == str : synonims += syn.tail
 					entity.examples.append(synonims)
 					
@@ -275,15 +317,26 @@ class MerriamWebsterParser() :
 	def __init__(self, word):
 		self.data = []
 		self.word = word
+		self.xml = ''
+		dump_me = False
 #		84ffb629-a7c3-4512-9c3c-a520c79ded19 (albert@gmail) 181c71fa-4b20-4ec3-83d8-5eb06fe8bdf0 (albertly@yandex)
-#http://www.dictionaryapi.com/api/v1/references/learners/xml/root?key=91359489-f427-4143-9465-5b3afadd3d27
-		xml = urllib.urlopen('http://www.dictionaryapi.com/api/v1/references/collegiate/xml/' + word + "?key=84ffb629-a7c3-4512-9c3c-a520c79ded19").read()
-#		xml = urllib.urlopen('http://www.dictionaryapi.com/api/v1/references/learners/xml/' + word + "?key=91359489-f427-4143-9465-5b3afadd3d27").read()
-		root = ET.fromstring(xml)
+		if not self.load() :
+			self.xml = urllib.urlopen('http://www.dictionaryapi.com/api/v1/references/collegiate/xml/' + word + "?key=84ffb629-a7c3-4512-9c3c-a520c79ded19").read()
+			dump_me = True
+			
+		root = ET.fromstring(self.xml)
 		for child in root:
 			ew = child.find('./ew')
 			if ew != None and child.find('./ew').text == word :
-				fl = child.find('./fl').text
+				if dump_me :
+					self.dump()
+					dump_me = False
+				fl = ''
+				fle = child.find('./fl')
+				if fle != None :
+					fl = fle.text
+				else :
+					continue
 				dts = child.findall('.//dt')
 				data = []
 				for dt in dts :
@@ -339,13 +392,29 @@ class MerriamWebsterParser() :
 		st = st + "</ul>"        
 
 		return st
+		
+	def dump(self) :
+		fp = Storage(self.word).getPath() + self.word + '.mwd'
 
+		with open(fp, 'w') as f:
+			f.write(self.xml)
+
+	def load(self) :
+		fp = Storage(self.word).getPath() + self.word + '.mwd'
+		if os.path.exists(fp) :
+			with codecs.open(fp, 'r') as f:
+				self.xml = f.read() 
+			return True
+		else :
+			return False
+			
 class DictionaryParser() :
 	def __init__(self, word):
 		self.word = word
 
 	def format(self) :
-		merriamWebster = MerriamWebsterThesaurusParser(self.word)
+		collComm =  CollinsDictionaryCommonness(self.word)
+		merriamWebsterThesaurus = MerriamWebsterThesaurusParser(self.word)
 		yourDictionary = YourDictionaryParser(self.word)
 		coll = CollinsDictionaryThesaurus(self.word)
 		#html = "<h3><img src='http://www.yourdictionary.com/favicon.ico'>&nbsp;YourDictionary</h3>" + yourDictionary.format() + "<hr/>" + "<h3><img src='http://www.merriam-webster.com/favicon.ico'>&nbsp;Merriam-Webster</h3>" +  merriamWebster.format() + "<hr>" + coll.format()
@@ -370,15 +439,18 @@ class DictionaryParser() :
 </head>
 <body>""" % (anki.js.jquery, anki.js.ui, '50%')
 
-		html += "<div class='accordion'><h3><a class='f' href='#'><img src='http://www.collinsdictionary.com/favicon.ico'>&nbsp;Collins Thesaurus</a></h3>"
+		html += "<div class='accordion'><h3><a class='f' href='#'><img src='http://www.collinsdictionary.com/favicon.ico'>&nbsp;Collins Thesaurus&nbsp;</a>" + collComm.format() + "</h3>"
 		html += "<div>" + coll.format() + "</div></div>"
 
 		html += "<div class='accordion'><h3><a href='#'><img src='http://www.yourdictionary.com/favicon.ico'>&nbsp;YourDictionary</a></h3>"
 		html += "<div>" + yourDictionary.format() + "</div></div>"
-
-		html += "<div class='accordion'><h3><a href='#'><img src='http://www.merriam-webster.com/favicon.ico'>&nbsp;Merriam-Webster</a></h3>"
-		html += "<div>" + merriamWebster.format() + "</div></div>"
-
+		if len(merriamWebsterThesaurus.data) > 0 :
+			html += "<div class='accordion'><h3><a href='#'><img src='http://www.merriam-webster.com/favicon.ico'>&nbsp;Merriam-Webster Thesaurus</a></h3>"
+			html += "<div>" + merriamWebsterThesaurus.format() + "</div></div>"
+		else :
+			merriamWebster = MerriamWebsterParser(self.word)
+			html += "<div class='accordion'><h3><a href='#'><img src='http://www.merriam-webster.com/favicon.ico'>&nbsp;Merriam-Webster</a></h3>"
+			html += "<div>" + merriamWebster.format() + "</div></div>"
 		html += """
 <script type="text/javascript">
     $(".accordion").accordion({ collapsible: true, active: false, heightStyle: 'content' });
