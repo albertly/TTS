@@ -32,7 +32,7 @@ This Anki2 addon adds a standard tool bar (a QtToolBar) to the Anki
 main window. By default a few buttons (QActions) are added, more can
 be added by the user.
 """
-version = '0.2.18 Release'
+version = '0.2.19 Release'
 
 __version__ = "1.1.2"
 
@@ -124,6 +124,8 @@ def showHTML(html, modality=Qt.WindowModal):
 		d.show()
 	saveGeom(d, "htmlview")
 
+def actionLetter() :
+	utils.showInfo(mw.reviewer.card.note()['Front'][:1])
 		
 def actionDefer() :
 	n = mw.reviewer.card.note()
@@ -353,6 +355,14 @@ border-bottom: 1px solid #aaa;
     defer_action.setCheckable(True)
     mw.connect(defer_action, SIGNAL("triggered()"), actionDefer)
     mw.qt_tool_bar.addAction(defer_action)
+
+    letter_action = QAction(mw)
+    letter_action.setText(_(u"Letter"))
+    letter_action.setShortcut(QKeySequence(Qt.Key_L))
+    letter_action.setIcon(QIcon(os.path.join(icons_dir, 'question_mark.png')))
+    letter_action.setToolTip(_(u"First Letter Hint L"))
+    mw.connect(letter_action, SIGNAL("triggered()"), actionLetter)
+    mw.qt_tool_bar.addAction(letter_action)
 	
 def add_more_tool_bar():
     """
@@ -702,6 +712,7 @@ def NEW__bottomHTML() :
 	<script>
 
 function cellBlink() {
+   return;
 if (maxTime <= time) {
 $("#time").css("background-color", "yellow");
 setTimeout('cellBlink2()', 500);
