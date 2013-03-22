@@ -10,15 +10,15 @@ from .downloadaudio.downloaders.downloader import AudioDownloader
 from anki.utils import stripHTML, json
 from aqt import mw, utils
 
-version = '0.2.20 Release'
+version = '0.2.24 Release'
 
 class Storage() :
+	base = 'c:/users/olya/AppData/Roaming/ParseYourDictionary/ParseYourDictionary/1.0.0.0/'
 	def __init__(self, word) :
 		self.word = word
-		self.base = 'c:/users/albert/AppData/Roaming/ParseYourDictionary/ParseYourDictionary/1.0.0.0/'
 		
 	def getPath(self) :
-		storagePath = self.base + self.word[:2] + '/'
+		storagePath = Storage.base + self.word[:2] + '/'
 		
 		try :
 			os.makedirs(storagePath)
@@ -49,7 +49,7 @@ class Entity() :
         self.meaning = meaning
     def setExample(self, example) :
         self.examples.append(example)
-
+    
 
     def dumps(self) :
         json_meaning = json.dumps(self.meaning)
@@ -61,7 +61,25 @@ class Entity() :
         arr_entity = json.loads(json_entity)
         self.meaning = json.loads(arr_entity[0])
         self.examples = json.loads(arr_entity[1])
-		
+
+class EntityEx(Entity) :
+    def __init__(self) :
+        Entity.__init__(self)
+        self.sub = False
+
+    def dumps(self) :
+        json_meaning = json.dumps(self.meaning)
+        json_examples = json.dumps(self.examples)
+        json_sub = json.dumps(self.sub)
+        json_entity = json.dumps([json_meaning, json_examples, json_sub])
+        return json_entity
+    
+    def loads(self, json_entity) :
+        arr_entity = json.loads(json_entity)
+        self.meaning = json.loads(arr_entity[0])
+        self.examples = json.loads(arr_entity[1])
+        self.sub = json.loads(arr_entity[2])
+        
 class CollinsDictionaryCommonness(AudioDownloader) :
     def __init__(self, word):
         self.data = ''
@@ -78,7 +96,7 @@ class CollinsDictionaryCommonness(AudioDownloader) :
                  self.dump()
 
     def format(self) :
-        return "<base href='" + self.icon_url + "' target='_blank'>" +  self.data.replace("<img", "<img align='right' ")
+        return self.data.replace("<img", "<img align='right' ").replace("/static/graphics/commonnessDots/", Storage.base)
 
     def dump(self) :
         fp = Storage(self.word).getPath() + self.word + '.cdc'
@@ -94,6 +112,114 @@ class CollinsDictionaryCommonness(AudioDownloader) :
             return True
         else :
             return False
+			
+class MacmillanThesaurusParser(AudioDownloader) :
+    def __init__(self, word):
+        AudioDownloader.__init__(self)
+        self.data = []
+        self.word = word
+        self.stars = 0
+        if not self.load() :
+            self.url = 'http://www.macmillandictionary.com/thesaurus/american/'
+            word_soup = self.get_soup_from_url(self.url + word)
+            HOMOGRAPH = word_soup.find(attrs={'class' : 'HOMOGRAPH'})
+            if HOMOGRAPH == None : return
+            stars = HOMOGRAPH.findAll('img')
+            if stars != None :
+                self.stars = len(stars)
+
+                SENSE = HOMOGRAPH.findAll(attrs={'class' : 'SENSE-BODY'})
+                if len(SENSE) == 0 : SENSE = HOMOGRAPH.findAll(attrs={'class' : 'phrasalverbsense'}) 
+                for s in SENSE:
+                   entity = EntityEx()
+                   meaning = s.span.getText(u' ')
+                   entity.setMeaning(meaning)
+                   cattitle = s.find(attrs={'class' : 'cattitle'})
+                   synonyms = s.find(attrs={'class' : 'synonyms'})
+
+                   st_cattitle = ''
+                   if cattitle != None : st_cattitle = cattitle.getText() + u'&nbsp;'
+                   st_synonyms = ''
+                   if synonyms != None : st_synonyms = synonyms.getText().replace(",", ", ") 
+                   entity.setExample(st_cattitle + st_synonyms)
+                   self.data.append(entity)
+                
+                   SUB_SENSE_CONTENT = s.findAll(attrs={'class' : 'SUB-SENSE-CONTENT'})
+                   for ss in SUB_SENSE_CONTENT :
+                       entity = EntityEx()
+                       entity.setMeaning(ss.span.getText(u' '))
+                       cattitle = ss.find(attrs={'class' : 'cattitle'})
+                       synonyms = ss.find(attrs={'class' : 'synonyms'})
+   
+                       st_cattitle = ''
+                       if cattitle != None : st_cattitle = cattitle.getText() + u'&nbsp;'
+                       st_synonyms = ''
+                       if synonyms != None : st_synonyms = synonyms.getText().replace(",", ", ") 
+                       entity.setExample(st_cattitle + st_synonyms)   
+
+                       entity.sub = True
+                       self.data.append(entity)   
+               
+                self.dump()
+
+    def dump(self) :
+        fp = Storage(self.word).getPath() + self.word + '.mtp'
+        arr_data = []
+        for e in self.data :
+            st = e.dumps()
+            arr_data.append(st)
+
+        arr_data_all = [json.dumps(self.stars), json.dumps(arr_data)]
+
+        with open(fp, 'w') as f:
+              json.dump(arr_data_all, f)
+
+    def load(self) :
+        fp = Storage(self.word).getPath() + self.word + '.mtp'
+        if os.path.exists(fp) :
+            arr_data_all = []
+
+            with open(fp, 'r') as f:
+                arr_data_all = json.load(f)
+
+            self.stars = json.loads(arr_data_all[0])
+            arr_data = json.loads(arr_data_all[1])
+
+            for st in arr_data :
+                e = EntityEx()
+                e.loads(st)
+                self.data.append(e)   
+            return True
+        else :
+            return False
+			
+    def formatStars(self) :
+        st = ""
+        for x in range(0, self.stars) :
+            st += u"<img align='right' style='margin-top: -3px' src='" + Storage.base + u"star.gif'>"
+        return st
+
+    def format(self) :
+        st = "<ul>"
+        for e in self.data :
+            if e.sub :
+                st += "<dd>"
+                margin = "40"
+            else :
+                st += "<li>"
+                margin = "20"
+            st +=  str_cir(e.meaning.encode('ascii','replace')).ireplace(self.word, " ___ ") 
+
+            for ex in e.examples :
+                st +=  "<p style='margin-left: %spx'>" % (margin) +  str_cir(ex.encode('ascii','replace')).ireplace(self.word, " ___ ") + "</p>"
+            
+            if e.sub :
+               st +=  "</dd> "
+            else :
+               st += "</li>"
+        st += "</ul>"    
+
+        return st
 
 class CollinsDictionaryThesaurus(AudioDownloader) :
     def __init__(self, word):
@@ -104,11 +230,15 @@ class CollinsDictionaryThesaurus(AudioDownloader) :
             self.url = 'http://www.collinsdictionary.com/dictionary/american-thesaurus/'
             word_soup = self.get_soup_from_url(self.url + word)
             syn = word_soup.findAll(attrs={'class' : 'syn'})
+            if len(syn) == 0 :
+                self.url = 'http://www.collinsdictionary.com/dictionary/english-thesaurus/'
+                word_soup = self.get_soup_from_url(self.url + word)
+                syn = word_soup.findAll(attrs={'class' : 'syn'})
             something_to_dump = False
             for syn_tag in syn:
                 self.data.append(syn_tag.text)
                 something_to_dump = True
-            if something_to_dump :
+            if True :
                 self.dump()
    
     def dump(self) :
@@ -146,7 +276,12 @@ class YourDictionaryParser(HTMLParser):
         self.something_to_dump = False
         if not self.load() :
  #       http://americanheritage.yourdictionary.com/
-            self.feed(urllib.urlopen('http://www.yourdictionary.com/' + word).read())
+#            self.feed(urllib.urlopen('http://www.yourdictionary.com/' + word).read())
+            connection = urllib.urlopen('http://www.yourdictionary.com/' + word)
+            encoding = connection.headers.getparam('charset')
+            page = connection.read().decode("utf-8")
+            self.feed(page)
+            self.something_to_dump = True
         if self.something_to_dump : 
             self.dump()
 
@@ -278,8 +413,10 @@ class MerriamWebsterThesaurusParser() :
 					if type(syn.tail) == str : synonims += syn.tail
 					entity.examples.append(synonims)
 					
-					rel = '<i>Related Words:&nbsp;</i>' + sens.find('./rel').text
-					entity.examples.append(rel)
+					relwords = sens.find('./rel')
+					if relwords != None :
+						rel = '<i>Related Words:&nbsp;</i>' + relwords.text
+						entity.examples.append(rel)
 
 					self.data.append(entity)
 
@@ -415,9 +552,9 @@ class DictionaryParser() :
 	def format(self) :
 		collComm =  CollinsDictionaryCommonness(self.word)
 		merriamWebsterThesaurus = MerriamWebsterThesaurusParser(self.word)
+		macmillanThesaurus = MacmillanThesaurusParser(self.word)
 		yourDictionary = YourDictionaryParser(self.word)
 		coll = CollinsDictionaryThesaurus(self.word)
-		#html = "<h3><img src='http://www.yourdictionary.com/favicon.ico'>&nbsp;YourDictionary</h3>" + yourDictionary.format() + "<hr/>" + "<h3><img src='http://www.merriam-webster.com/favicon.ico'>&nbsp;Merriam-Webster</h3>" +  merriamWebster.format() + "<hr>" + coll.format()
 		html ="""
 <!doctype html>
 <html lang="en">
@@ -435,22 +572,30 @@ class DictionaryParser() :
 		li {
 				padding-left: 5px;
 			}
+		ul.sub { padding-left: 5px;}
+		li.sub {
+				padding-left: 10px;
+			}
 	</style>
 </head>
 <body>""" % (anki.js.jquery, anki.js.ui, '50%')
 
-		html += "<div class='accordion'><h3><a class='f' href='#'><img src='http://www.collinsdictionary.com/favicon.ico'>&nbsp;Collins Thesaurus&nbsp;</a>" + collComm.format() + "</h3>"
+		html += "<div class='accordion'><h3><a class='f' href='#'><img src='" + Storage.base + "coll.ico'>&nbsp;Collins Thesaurus&nbsp;</a>" + collComm.format() + "</h3>"
 		html += "<div>" + coll.format() + "</div></div>"
 
-		html += "<div class='accordion'><h3><a href='#'><img src='http://www.yourdictionary.com/favicon.ico'>&nbsp;YourDictionary</a></h3>"
+		html += "<div class='accordion'><h3><a href='#'><img src='" + Storage.base + "yourDictionary.ico'>&nbsp;YourDictionary</a></h3>"
 		html += "<div>" + yourDictionary.format() + "</div></div>"
 		if len(merriamWebsterThesaurus.data) > 0 :
-			html += "<div class='accordion'><h3><a href='#'><img src='http://www.merriam-webster.com/favicon.ico'>&nbsp;Merriam-Webster Thesaurus</a></h3>"
+			html += "<div class='accordion'><h3><a href='#'><img src='" + Storage.base + "merriam.ico'>&nbsp;Merriam-Webster Thesaurus</a></h3>"
 			html += "<div>" + merriamWebsterThesaurus.format() + "</div></div>"
-		else :
-			merriamWebster = MerriamWebsterParser(self.word)
-			html += "<div class='accordion'><h3><a href='#'><img src='http://www.merriam-webster.com/favicon.ico'>&nbsp;Merriam-Webster</a></h3>"
-			html += "<div>" + merriamWebster.format() + "</div></div>"
+#		else :
+#			merriamWebster = MerriamWebsterParser(self.word)
+#			html += "<div class='accordion'><h3><a href='#'><img src='" + Storage.base + "merriam.ico'>&nbsp;Merriam-Webster</a></h3>"
+#			html += "<div>" + merriamWebster.format() + "</div></div>"
+
+		html += "<div class='accordion'><h3><a href='#'><img src='" + Storage.base + "macmillan.ico'>&nbsp;Macmillan Thesaurus</a>" + macmillanThesaurus.formatStars() + "</h3>"
+		html += "<div>" + macmillanThesaurus.format() + "</div></div>"
+		
 		html += """
 <script type="text/javascript">
     $(".accordion").accordion({ collapsible: true, active: false, heightStyle: 'content' });
