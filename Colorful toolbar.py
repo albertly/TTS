@@ -32,7 +32,7 @@ This Anki2 addon adds a standard tool bar (a QtToolBar) to the Anki
 main window. By default a few buttons (QActions) are added, more can
 be added by the user.
 """
-version = '0.2.19 Release'
+version = '0.2.23 Release'
 
 __version__ = "1.1.2"
 
@@ -64,19 +64,8 @@ def Example_Def(text):
 	subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
 
 def Example_Repeat(text):
-	text = re.sub("\[sound:.*?\]", "", stripHTML(text.replace("\n", "")).encode('utf-8'))
-	param = ['ParseYourDictionary.exe', '-r', text]
-
-	subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
-		
-		
-def Example_read(text):
-	text = re.sub("\[sound:.*?\]", "", stripHTML(text.replace("\n", "")).encode('utf-8'))
-	param = ['ParseYourDictionary.exe', text]
-	if subprocessing:
-		subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
-	else:
-		subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT).communicate()
+	sentence = LastSentence()
+	showLastSentence(sentence)
 		
 def actionF3():
 	TTS_read(mw.reviewer.card.note()['Front'])
@@ -103,8 +92,38 @@ def actionHint(note=False) :
 		st = DictionaryParser(note['Front']).format()
 		showHTML(st,Qt.NonModal)
 
-def showHTML(html, modality=Qt.WindowModal):
+def showLastSentence(html):
 	m = QMainWindow(mw)
+	d = QDialog(m)
+	m = QHBoxLayout()
+	l = QVBoxLayout()
+	r = QVBoxLayout()
+	w = QLabel()
+	w.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+	l.addWidget(w)
+	ss = QPushButton(u'Say')
+	bb = QDialogButtonBox(QDialogButtonBox.Close)
+	bb.addButton(ss, QDialogButtonBox.ActionRole)
+	bb.setOrientation(Qt.Vertical)
+#	r.addWidget(ss)
+	r.addWidget(bb)
+	
+	ss.connect(ss, SIGNAL("clicked()"), actionReadSentence)
+	
+	bb.connect(bb, SIGNAL("rejected()"), d, SLOT("reject()"))
+	m.addLayout(l)
+	m.addLayout(r)
+	d.setLayout(m)
+	d.setWindowModality(Qt.WindowModal)
+	d.resize(649, 145) 
+	restoreGeom(d, "LastSentence")
+	html = "<html><body><h3>" + html + "</h3></body></html>"
+	w.setText(html)
+	d.exec_()
+	saveGeom(d, "LastSentence")
+	
+def showHTML(html, modality=Qt.WindowModal):
+	m = QMainWindow(mw.app.activeWindow())
 	d = QDialog(m)
 	l = QVBoxLayout()
 	l.setMargin(0)
@@ -115,7 +134,7 @@ def showHTML(html, modality=Qt.WindowModal):
 	bb.connect(bb, SIGNAL("rejected()"), d, SLOT("reject()"))
 	d.setLayout(l)
 	d.setWindowModality(modality)
-	d.resize(500, 400)
+	d.resize(500, 400) 
 	restoreGeom(d, "htmlview")
 	w.stdHtml(html)
 	if modality == Qt.WindowModal :
@@ -124,6 +143,9 @@ def showHTML(html, modality=Qt.WindowModal):
 		d.show()
 	saveGeom(d, "htmlview")
 
+def actionReadSentence() :
+	TTS_read(LastSentence())
+	
 def actionLetter() :
 	utils.showInfo(mw.reviewer.card.note()['Front'][:1])
 		
