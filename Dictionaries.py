@@ -4,16 +4,58 @@ import re
 import xml.etree.ElementTree as ET
 import anki.js
 import codecs
+from random import randint
 from HTMLParser import HTMLParser
 from htmlentitydefs import name2codepoint
 from .downloadaudio.downloaders.downloader import AudioDownloader
 from anki.utils import stripHTML, json
 from aqt import mw, utils
 
-version = '0.2.24 Release'
+version = '0.2.30 Release'
 
+class Sentence() :
+	def __init__(self) :
+		self.word = ''
+		self.content = []
+		self.sentence = ''
+		self.rand = -1
+	
+	def clean(self) :
+		self.content = []
+		self.sentence = ''
+		self.rand = -1
+		
+	def getOldSentence(self) :
+		return self.sentence
+		
+	def getSentence(self, word) :
+		sentence = ''
+		fullname = Storage(word).getPath() + word + ".bin.txt"
+		try :
+			if word != self.word or len(self.content) == 0:
+				with open(fullname, 'r') as f: self.content = f.readlines()
+				self.word = word
+				self.rand = -1
+			length = len(self.content)
+			if length != 0 :
+				while True :
+					rand = randint(0,length-1)
+					if rand != self.rand or length == 1 :
+						self.rand = rand
+						break
+				sentence = self.content[self.rand].strip()
+				self.sentence = sentence
+			else :
+				self.clean()
+				
+		except IOError :
+			self.clean()
+			pass
+		
+		return sentence
+		
 class Storage() :
-	base = 'c:/users/olya/AppData/Roaming/ParseYourDictionary/ParseYourDictionary/1.0.0.0/'
+	base = 'c:/users/albert/AppData/Roaming/ParseYourDictionary/ParseYourDictionary/1.0.0.0/'
 	def __init__(self, word) :
 		self.word = word
 		
@@ -364,6 +406,69 @@ class YourDictionaryParser(HTMLParser):
                     self.entity = Entity()
                     self.entity.setMeaning(data.strip())
 					
+class WordNetParser() :
+	def __init__(self, word):
+		self.data = []
+		self.word = word.strip()
+		self.xml = ""
+		if not self.load() :
+			self.xml = urllib.urlopen('http://www.stands4.com/services/v2/syno.php?uid=2686&tokenid=WAOzklnbIIZEFAjE&word=' + self.word).read()
+			self.dump()
+			
+		try :
+			root = ET.fromstring(self.xml)
+		except :
+			utils.showInfo(self.word)
+			utils.showInfo(self.xml)
+			raise
+			
+		for child in root:
+			term = child.find('./term').text
+			definition = child.find('./definition').text
+			partofspeech = child.find('./partofspeech').text
+			if (partofspeech is None) : partofspeech = 'A'
+			
+			synonyms = child.find('./synonyms').text
+			if (synonyms is None) : synonyms = ''
+			
+			if not partofspeech[0].isupper() :
+				entity = Entity()
+				entity.setMeaning(definition.strip())
+				synset = [x.strip() for x in (term + ", " + synonyms).split(',')]
+				synset = list(set(synset))
+				entity.setExample(", ".join(synset))
+				self.data.append(entity)
+				
+	def dump(self) :
+		fp = Storage(self.word).getPath() + self.word + '.wnp'
+
+		with open(fp, 'w') as f:
+			f.write(self.xml)
+
+	def load(self) :
+		fp = Storage(self.word).getPath() + self.word + '.wnp'
+		if os.path.exists(fp) :
+			with codecs.open(fp, 'r') as f:
+				self.xml = f.read() 
+			return True
+		else :
+			return False
+
+	def format(self) :
+		st = "<ul>"
+		for e in self.data :
+			st += "<li> "
+			st +=    str_cir(e.meaning.encode('ascii','replace')).ireplace(self.word, " ___ ") 
+			
+			for ex in e.examples :
+				st +=  "<p style='margin-left: 20px'>" +  str_cir(ex.encode('ascii','replace')).ireplace(self.word, " ___ ") + "</p>"
+			
+			st +=  "</li> "
+
+		st += "</ul>"    
+
+		return st
+		
 class MerriamWebsterThesaurusParser() :
 	def __init__(self, word):
 		self.data = []
@@ -481,7 +586,6 @@ class MerriamWebsterParser() :
 					meaning = dt.text
 					if type(dt.tail) == str : meaning = meaning + " " + dt.tail
 					entity.meaning = meaning
-#					print "Meaning  :",  entity.meaning
 					vis = dt.findall(".//vi")
 					for vi in vis :
 						example = ""
@@ -492,25 +596,19 @@ class MerriamWebsterParser() :
 							if type(subTemp.tail) == str : example = example + " " + subTemp.tail
 						if type(vi.tail) == str : example = example + " " + vi.tail
 						entity.setExample(example)
-#						print "VI  text   :", vi.text
-#						print "VI  tail   :", vi.tail
-#						print "VI subTemp  text   :", subTemp.text
-#						print "VI subTemp  tail   :", subTemp.tail
-#						print "Full example   :", example
+
 					fw = dt.find('fw')
 					if fw != None :
 						meaning = ""
 						if type(fw.text) == str : meaning =  fw.text
 						if type(fw.tail) == str : meaning = meaning + " " + fw.tail
 						entity.meaning = entity.meaning + " " + meaning
-#						print "Meaning Full  :", entity.meaning
 					sx = dt.find('sx')
 					if sx != None :
 						meaning = ""
 						if type(sx.text) == str : meaning =  sx.text
 						if type(sx.tail) == str : meaning = meaning + " " + sx.tail
 						entity.meaning = entity.meaning + " " + meaning
-#						print "Meaning Full  :", entity.meaning
 					data.append(entity)
 				group = GroupEntities(data, fl)
 				self.data.append(group)
@@ -555,13 +653,41 @@ class DictionaryParser() :
 		macmillanThesaurus = MacmillanThesaurusParser(self.word)
 		yourDictionary = YourDictionaryParser(self.word)
 		coll = CollinsDictionaryThesaurus(self.word)
+		wordnet = WordNetParser(self.word)
+		word = self.word
+		
+		class Synonims :
+			def getSynonims(self) :
+				l = word[:1]
+				synonims = ''
+				data = merriamWebsterThesaurus.data
+				for e in data :
+					synonims += e.examples[0] + ", "
+					
+#				synonims += ", "
+				data = wordnet.data
+				for e in data :
+					synonims += e.examples[0]
+					
+				data = coll.data
+				for st in data :
+					synonims += ", " + st
+				
+				synset = [x.strip() for x in (synonims).split(',')]
+				synset1 = []
+				for s in synset :
+					if s[:1] == l :  synset1.append(s)
+				synset = sorted(set(synset1))
+				
+				return str_cir(", ".join(synset).encode('ascii','replace')).ireplace(word, " ___ ") 
+				
 		html ="""
 <!doctype html>
 <html lang="en">
 <head>
 	<meta charset="utf-8">
 	<title></title>
-	<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.1/themes/base/jquery-ui.css">
+	<link rel="stylesheet" href="C:\\Users\\albert\\Documents\\Anki\\addons\\CSS\\jquery-ui-1.10.2.custom.min.css">
 	<script>%s</script>
 	<script>%s</script>
 	<style type="text/css">	
@@ -596,6 +722,12 @@ class DictionaryParser() :
 		html += "<div class='accordion'><h3><a href='#'><img src='" + Storage.base + "macmillan.ico'>&nbsp;Macmillan Thesaurus</a>" + macmillanThesaurus.formatStars() + "</h3>"
 		html += "<div>" + macmillanThesaurus.format() + "</div></div>"
 		
+		html += "<div class='accordion'><h3><a href='#'><img src='" + Storage.base + "wordnet.ico'>&nbsp;Word Net</a></h3>"
+		html += "<div>" + wordnet.format() + "</div></div>"
+		
+		synonims = Synonims()
+		html += "<br><hr>"
+		html += "<div class='ui-widget'>" + synonims.getSynonims() + "</div>"
 		html += """
 <script type="text/javascript">
     $(".accordion").accordion({ collapsible: true, active: false, heightStyle: 'content' });
@@ -604,6 +736,7 @@ class DictionaryParser() :
  
 </body>
 		"""
+		
 		return html
 		
 
