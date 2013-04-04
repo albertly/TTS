@@ -5,7 +5,7 @@
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
 #
 #   GoogleTTS plugin for Anki 2.0
-version = '0.2.12 Release'
+version = '0.2.16 Release'
 #
 #   Any problems, comments, please post in this thread:  (or email me: arthur@life.net.br )
 #
@@ -183,6 +183,11 @@ from PyQt4 import QtGui,QtCore
 from PyQt4.QtGui import *
 from aqt.reviewer import Reviewer
 from aqt.utils import tooltip
+from Dictionaries import Sentence
+
+from anki.stats import CollectionStats
+from aqt.stats import DeckStats
+
 
 icons_dir = os.path.join(mw.pm.addonFolder(), 'color-icons')
 language_generator = TTS_language
@@ -198,7 +203,7 @@ if len(proxies)>0 and "http" in proxies:
 	TTS_ADDRESS = proxStr + "/" + TTS_ADDRESS
 
 
-
+sentence = Sentence()
 
 # mplayer for windows
 if subprocess.mswindows:
@@ -270,7 +275,9 @@ def playTTSFromText(text):
 ###########  TTS_read to recite the tts on-the-fly
 
 def TTS_read(text, language=TTS_language):
-	text = re.sub("\[sound:.*?\]", "", stripHTML(text.replace("\n", "")).encode('utf-8'))
+#	utils.showInfo(text)
+#	text = text.decode('utf-8', 'ignore')
+	text = stripHTML(text.replace("\n", "")).encode('utf-8')
 #	utils.showInfo(text)
 #	if text.find('Â') != -1 :
 #		utils.showInfo('Found T')
@@ -697,14 +704,21 @@ def newKeyHandler(self, evt):
 				break
 	evt.accept()
 
+def LastSentence() :
+	return sentence.getOldSentence()
+	
 def Example_read(text):
-	text = re.sub("\[sound:.*?\]", "", stripHTML(text.replace("\n", "")).encode('utf-8'))
-	param = ['ParseYourDictionary.exe', text]
-	if subprocessing:
-		subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
-	else:
-		subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT).communicate()	
-
+	text = stripHTML(text.replace("\n", "")).encode('utf-8')
+	sen = sentence.getSentence(text)
+	if len(sen) == 0 :
+		param = ['ParseYourDictionary.exe', text]
+		if subprocessing:
+			subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+		else:
+			subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT).communicate()	
+	else :
+		TTS_read(sen,TTS_language)
+		
 def actionRu():
     utils.showInfo(self1.card.note()['Translation'])
 
@@ -815,15 +829,18 @@ def showHidden():
 
 ###########  WordCount_get 
 def WordCount_get(text):
-	text = re.sub("\[sound:.*?\]", "", stripHTML(text.replace("\n", " ")).encode('utf-8'))
+	text = stripHTML(text.replace("\n", " ")).encode('utf-8')
 	address = WORDCOUNT_ADDRESS + quote_plus(text) + '&method=SEARCH%5FBY%5FNAME'
 	response = urllib.urlopen(address) 
-	data = response.read() 
-	b1 = data.split('&',10)
-	b0 = b1[3].split('=')
-	b2 = b1[2].split('=')
-	utils.showInfo(str(round((float(b0[1])/float(b2[1])) * 100,2)) + "%" )
-	
+	if 200 == response.code :
+		data = response.read() 
+		b1 = data.split('&',10)
+		b0 = b1[3].split('=')
+		b2 = b1[2].split('=')
+		utils.showInfo(str(round((float(b0[1])/float(b2[1])) * 100,2)) + "%" )
+	else :
+		utils.showInfo('Not found')
+		
 def actionCount():
 #	try:
 	word = self1.card.note()['Front'].lower()
@@ -836,6 +853,70 @@ Reviewer._showQuestion = wrap(Reviewer._showQuestion, newKeyHandler1, "before")
 Reviewer._keyHandler = wrap(Reviewer._keyHandler, newKeyHandler, "before")
 Reviewer._showQuestion = wrap(Reviewer._showQuestion, GTTS_OnQuestion, "after")
 Reviewer._showAnswer  = wrap(Reviewer._showAnswer, GTTS_OnAnswer, "after")
+
+OLD_eases = CollectionStats._eases
+
+card_filter = ''
+
+def NEW_eases(self):
+	global card_filter
+		
+	utils.showInfo(card_filter)
+	self.card_filter = card_filter
+	if card_filter == '' :
+		return OLD_eases(self)
+	lims = []
+	lim = self._revlogLimit()
+	if lim:
+		lims.append(lim)
+	if self.type == 0:
+		days = 30
+	elif self.type == 1:
+		days = 365
+	else:
+		days = None
+	if days is not None:
+		lims.append("id > %d" % (
+			(self.col.sched.dayCutoff-(days*86400))*1000))
+	if lims:
+		lim = "where " + " and ".join(lims)
+	else:
+		lim = ""
+	lim += " and c.ord = %s and c.id = r.cid " % card_filter
+	st = """
+select (case
+when r.type in (0,2) then 0
+when lastIvl < 21 then 1
+else 2 end) as thetype,
+(case when r.type in (0,2) and ease = 4 then 3 else ease end), count() from revlog as r, cards as c %s
+group by thetype, ease
+order by thetype, ease""" % lim.replace("id >", "r.id >")
+	return self.col.db.all(st)
+	
+CollectionStats._eases = NEW_eases
+
+added = False
+
+def ask_value() :
+	global card_filter
+	r = utils.getText(prompt = u'Enter CardID', default=u'0')
+	num = int(r[0])
+	if r[1] == 0 or num is None :
+		card_filter = ''
+	else :
+		card_filter = r[0]
+		
+
+def myfunc(self, b) :
+	global added
+	if not added :
+		b = self.form.buttonBox.addButton(_("Filter"), QDialogButtonBox.ActionRole)
+		b.connect(b, SIGNAL("clicked()"), ask_value)
+		added = True
+	
+DeckStats.loadFin = wrap(DeckStats.loadFin, myfunc)
+#f = aqt.forms.stats.Ui_Dialog()
+#f.buttonBox.addButton(_("Test"), QDialogButtonBox.ActionRole)
 
 lines = [line.strip().lower() for line in open('Book1.csv')]
 line = "0"
