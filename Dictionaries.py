@@ -1,5 +1,6 @@
 import os
 import urllib
+import urllib2
 import re
 import xml.etree.ElementTree as ET
 import anki.js
@@ -10,8 +11,47 @@ from htmlentitydefs import name2codepoint
 from .downloadaudio.downloaders.downloader import AudioDownloader
 from anki.utils import stripHTML, json
 from aqt import mw, utils
+import json
+version = '0.2.33 Release'
 
-version = '0.2.30 Release'
+def removeNonAscii(s): return "".join(i for i in s if ord(i)<128)
+
+class Google() :
+	def write(self,word) :
+		content = []
+		fullname = Storage(word).getPath() + word + ".bin.txt"
+		try :
+			with open(fullname, 'r') as f: content = f.readlines()
+		except IOError :
+			pass
+		url = u'http://translate.google.com//translate_a/ex?sl=en&tl=ru&q=' + word
+		user_agent = 'Mozilla/5.0'
+		request = urllib2.Request(url)
+		request.add_header('User-agent', user_agent)
+		response = urllib2.urlopen(request)
+		if response.code == 200 :
+			s = response.read()
+			j = json.loads(s)
+			
+			l = 0 
+			try :
+				l = len(j[0][0])
+			except IndexError :
+				pass
+				
+			if l > 0 :
+				with open(fullname, "a") as f1:
+					for s in j[0][0] :
+						st = stripHTML(removeNonAscii(s[0])) + "\n"
+						try :
+							if not st in content :
+								f1.write(st)
+						except:
+							utils.showInfo(word)
+							break
+
+
+
 
 class Sentence() :
 	def __init__(self) :
@@ -411,9 +451,11 @@ class WordNetParser() :
 		self.data = []
 		self.word = word.strip()
 		self.xml = ""
+		try_dump = False
 		if not self.load() :
 			self.xml = urllib.urlopen('http://www.stands4.com/services/v2/syno.php?uid=2686&tokenid=WAOzklnbIIZEFAjE&word=' + self.word).read()
-			self.dump()
+			try_dump = True
+			
 			
 		try :
 			root = ET.fromstring(self.xml)
@@ -423,13 +465,27 @@ class WordNetParser() :
 			raise
 			
 		for child in root:
-			term = child.find('./term').text
+			t = child.find('./term')
+			if t == None :
+				break
+			else :
+				if try_dump :
+					self.dump()
+					try_dump = False
+			term = t.text
 			definition = child.find('./definition').text
-			partofspeech = child.find('./partofspeech').text
-			if (partofspeech is None) : partofspeech = 'A'
+			p = child.find('./partofspeech')
+			if (p is None) :
+				partofspeech = 'A'
+			else :
+				partofspeech = p.text
 			
-			synonyms = child.find('./synonyms').text
-			if (synonyms is None) : synonyms = ''
+			s = child.find('./synonyms')
+			if (s is None or s.text is None) :
+				synonyms = ''
+			else :
+				synonyms = s.text
+			
 			
 			if not partofspeech[0].isupper() :
 				entity = Entity()
