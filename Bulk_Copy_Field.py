@@ -16,21 +16,34 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from anki.hooks import addHook
 from aqt import mw, utils
-from Dictionaries import DictionaryParser
+from Dictionaries import DictionaryParser,Google
+from GoogleTTS import GetExamples
+import traceback
+import warnings
 
 def bulkCopy(nids):
 
-    mw.progress.start()
+    mw.progress.start(immediate=True)
 
     for nid in nids:
         note = mw.col.getNote(nid)
-        try :
-            dp = DictionaryParser(note[srcField])
-            dp.format()
-        except UnicodeDecodeError as e:
-            utils.showInfo("UnicodeDecodeError " + note[srcField])
-
-
+        word = note[srcField]
+        try :    
+                with warnings.catch_warnings():
+                    warnings.simplefilter("error")
+                    mw.progress.update(label=word)
+                    GetExamples(word)
+                    g = Google()
+                    g.write(word)
+                    dp = DictionaryParser(word)
+                    dp.format()
+        except :
+#            mw.progress.clear()
+#            utils.showInfo("Exception " + word)
+            txt = "<h3>" + word + "</h3>" 
+            txt += "<div style='white-space: pre-wrap'>" + traceback.format_exc() + "</div>"
+            utils.showText(txt, type="html")
+            pass
 
     mw.progress.finish()
 
