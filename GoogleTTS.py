@@ -5,7 +5,7 @@
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
 #
 #   GoogleTTS plugin for Anki 2.0
-version = '0.2.19 Release'
+version = '0.2.20 Release'
 #
 #   Any problems, comments, please post in this thread:  (or email me: arthur@life.net.br )
 #
@@ -408,8 +408,8 @@ def Example_read(text,exitme=0):
 	else :
 		TTS_read(sen,TTS_language)
 		
-def actionRu():
-    utils.showInfo(self1.card.note()['Translation'])
+#def actionRu():
+#    utils.showInfo(self1.card.note()['Translation'])
 
 def GTTSautoread(toread, automatic=automaticQuestions):
 	if not sound.hasSound(toread):
@@ -426,6 +426,7 @@ def GTTS_OnQuestion(self):
 	self1 = self
 	stopSpeech()
 	#utils.showInfo(self.card.model()['name'])
+	self.mw.qt_tool_bar.actions()[18].setDisabled(False)
 	self.mw.qt_tool_bar.actions()[16].setDisabled(False)
 	self.mw.qt_tool_bar.actions()[17].setDisabled(True)
 	self.mw.qt_tool_bar.actions()[11].setDisabled(True)
@@ -481,7 +482,8 @@ def GTTS_OnAnswer(self):
 			
 	self.web.eval("document.getElementById('qa').style.visibility='visible'")
 	if checked :
-		self.mw.reviewer.web.eval("$('#spanTags').html('&#x2639;').show();")
+		st1 = "$('#spanTags').attr('src','file:///" + os.path.join(icons_dir, 'emotion_unhappy.png').replace("\\", "\\\\") + "').show();"
+		self.mw.reviewer.web.eval(st1)
 		self.mw.qt_tool_bar.actions()[17].setIcon(QIcon(os.path.join(icons_dir, 'warning_red.png')))
 		tooltip("Defered")
 	else :
