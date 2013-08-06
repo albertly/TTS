@@ -16,6 +16,7 @@
 from PyQt4.QtCore import QSize, SIGNAL
 from PyQt4.QtGui import QAction, QIcon, QMenu, QToolBar
 import os
+import textwrap
 from GoogleTTS import *
 from Dictionaries import *
 from anki.hooks import wrap, addHook
@@ -32,7 +33,7 @@ This Anki2 addon adds a standard tool bar (a QtToolBar) to the Anki
 main window. By default a few buttons (QActions) are added, more can
 be added by the user.
 """
-version = '0.2.23 Release'
+version = '0.2.28 Release'
 
 __version__ = "1.1.2"
 
@@ -91,7 +92,9 @@ def actionHint(note=False) :
 	else:
 		st = DictionaryParser(note['Front']).format()
 		showHTML(st,Qt.NonModal)
-
+def actionRu() :
+	tooltip1(mw.reviewer.card.note()['Translation'],8000)
+	
 def showLastSentence(html):
 	m = QMainWindow(mw)
 	d = QDialog(m)
@@ -145,9 +148,10 @@ def showHTML(html, modality=Qt.WindowModal):
 
 def actionReadSentence() :
 	TTS_read(LastSentence())
-	
+
 def actionLetter() :
-	utils.showInfo(mw.reviewer.card.note()['Front'][:1])
+	tooltip1(mw.reviewer.card.note()['Front'][:1])
+	#utils.showInfo(mw.reviewer.card.note()['Front'][:1])
 		
 def actionDefer() :
 	n = mw.reviewer.card.note()
@@ -177,7 +181,9 @@ def actionDefer() :
 			
 	if action == 1 :
 		n.flush()
-		mw.reviewer.web.eval("$('#spanTags').html('&#x2639;').show();")
+		#'&#x2639;'  .attr("src","second.jpg")
+		st1 = "$('#spanTags').attr('src','file:///" + os.path.join(icons_dir, 'emotion_unhappy.png').replace("\\", "\\\\") + "').show();"
+		mw.reviewer.web.eval(st1)
 		mw.qt_tool_bar.actions()[17].setIcon(QIcon(os.path.join(icons_dir, 'warning_red.png')))
 	elif action == -1 :
 		n.flush()
@@ -244,6 +250,11 @@ def ask_delete():
     if askUser('Delete note?', defaultno=True):
         mw.reviewer.onDelete()
 
+stop_action = QAction(mw)
+Say_action = QAction(mw)
+Show_action = QAction(mw)
+hint_action = QAction(mw)
+letter_action = QAction(mw)
 
 def add_tool_bar():
     """
@@ -305,7 +316,7 @@ border-bottom: 1px solid #aaa;
     mw.connect(F5_action, SIGNAL("triggered()"), actionF5)
     mw.qt_tool_bar.addAction(F5_action)		
 
-    stop_action = QAction(mw)
+    
     stop_action.setText(_(u"Stop"))
     stop_action.setIcon(QIcon(os.path.join(icons_dir, 'stop.png')))
     stop_action.setShortcut(QKeySequence(Qt.Key_Escape))	
@@ -314,7 +325,7 @@ border-bottom: 1px solid #aaa;
     mw.qt_tool_bar.addAction(stop_action)
 
 
-    Say_action = QAction(mw)
+#    Say_action = QAction(mw)
     Say_action.setText(_(u"Say Example"))
     Say_action.setIcon(QIcon(os.path.join(icons_dir, 'Say.png')))
     Say_action.setToolTip(_(u"Say Example  R"))
@@ -323,10 +334,10 @@ border-bottom: 1px solid #aaa;
     mw.qt_tool_bar.addAction(Say_action)			
 	
     Def_action = QAction(mw)
-    Def_action.setText(_(u"Definition"))
-    Def_action.setIcon(QIcon(os.path.join(icons_dir, 'dictionary.png')))
+    #Def_action.setText(_(u"Definition"))
+    #Def_action.setIcon(QIcon(os.path.join(icons_dir, 'dictionary.png')))
     Def_action.setToolTip(_(u"Definition"))
-    mw.connect(Def_action, SIGNAL("triggered()"), actionDef)
+    #mw.connect(Def_action, SIGNAL("triggered()"), actionDef)
     mw.qt_tool_bar.addAction(Def_action)		
 	
     Rep_action = QAction(mw)
@@ -336,7 +347,7 @@ border-bottom: 1px solid #aaa;
     mw.connect(Rep_action, SIGNAL("triggered()"), actionRepeat)
     mw.qt_tool_bar.addAction(Rep_action)	   
 
-    Show_action = QAction(mw)
+    
     Show_action.setText(_(u"Show"))
     Show_action.setIconText(_(u"Show"))
     Show_action.setShortcut(QKeySequence(Qt.Key_U))
@@ -354,13 +365,13 @@ border-bottom: 1px solid #aaa;
     mw.qt_tool_bar.addAction(Ru_action)		
 
     count_action = QAction(mw)
-    count_action.setText(_(u"Count"))
-    count_action.setIcon(QIcon(os.path.join(icons_dir, 'calculator.png')))
-    count_action.setToolTip(_(u"Count"))
-    mw.connect(count_action, SIGNAL("triggered()"), actionCount)
+    #count_action.setText(_(u"Count"))
+    #count_action.setIcon(QIcon(os.path.join(icons_dir, 'calculator.png')))
+    #count_action.setToolTip(_(u"Count"))
+    #mw.connect(count_action, SIGNAL("triggered()"), actionCount)
     mw.qt_tool_bar.addAction(count_action)
 
-    hint_action = QAction(mw)
+    
     hint_action.setText(_(u"Hint"))
     hint_action.setShortcut(QKeySequence(Qt.Key_H))
     hint_action.setIcon(QIcon(os.path.join(icons_dir, 'hint.png')))
@@ -378,7 +389,7 @@ border-bottom: 1px solid #aaa;
     mw.connect(defer_action, SIGNAL("triggered()"), actionDefer)
     mw.qt_tool_bar.addAction(defer_action)
 
-    letter_action = QAction(mw)
+    
     letter_action.setText(_(u"Letter"))
     letter_action.setShortcut(QKeySequence(Qt.Key_L))
     letter_action.setIcon(QIcon(os.path.join(icons_dir, 'question_mark.png')))
@@ -399,7 +410,7 @@ def add_more_tool_bar():
         return
     # mw.reviewer.more_tool_bar.setAccessibleName('secondary tool bar')
     mw.reviewer.more_tool_bar.setObjectName('more options tool bar')
-    mw.reviewer.more_tool_bar.setIconSize(QSize(24, 24))
+    mw.reviewer.more_tool_bar.setIconSize(QSize(32, 32))
     mw.reviewer.more_tool_bar.setStyleSheet(
         '''QToolBar{
 background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #fff, stop:1 #ddd);
@@ -407,24 +418,54 @@ border: none;
 border-bottom: 1px solid #aaa;
 }
 ''')
-    mw.reviewer.more_tool_bar.setFloatable(False)
-    mw.reviewer.more_tool_bar.setMovable(False)
+    mw.reviewer.more_tool_bar.setFloatable(True)
+    mw.reviewer.more_tool_bar.setMovable(True)
     # Todo: get index of the bottom web button thingy.
     mw.mainLayout.insertWidget(2, mw.reviewer.more_tool_bar)
     # Add the actions here
-    mw.reviewer.more_tool_bar.addAction(edit_current_action)
-    mw.reviewer.more_tool_bar.addAction(toggle_mark_action)
-    if show_toggle_last:
-        mw.reviewer.more_tool_bar.addAction(toggle_last_card_action)
-    mw.reviewer.more_tool_bar.addAction(bury_action)
-    mw.reviewer.more_tool_bar.addAction(suspend_action)
-    mw.reviewer.more_tool_bar.addAction(delete_action)
+#    mw.reviewer.more_tool_bar.addAction(edit_current_action)
+#    mw.reviewer.more_tool_bar.addAction(toggle_mark_action)
+#    if show_toggle_last:
+#        mw.reviewer.more_tool_bar.addAction(toggle_last_card_action)
+#    mw.reviewer.more_tool_bar.addAction(bury_action)
+#    mw.reviewer.more_tool_bar.addAction(suspend_action)
+#    mw.reviewer.more_tool_bar.addAction(delete_action)
+#    mw.reviewer.more_tool_bar.addSeparator()
+#    mw.reviewer.more_tool_bar.addAction(options_action)
     mw.reviewer.more_tool_bar.addSeparator()
-    mw.reviewer.more_tool_bar.addAction(options_action)
+#    mw.reviewer.more_tool_bar.addAction(replay_action)
+#    mw.reviewer.more_tool_bar.addAction(record_own_action)
+#    mw.reviewer.more_tool_bar.addAction(replay_own_action)
+
+    spacerWidget =  QWidget(mw)
+    spacerWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+    spacerWidget.setVisible(True)
+    mw.reviewer.more_tool_bar.addWidget(spacerWidget)
+
     mw.reviewer.more_tool_bar.addSeparator()
-    mw.reviewer.more_tool_bar.addAction(replay_action)
-    mw.reviewer.more_tool_bar.addAction(record_own_action)
-    mw.reviewer.more_tool_bar.addAction(replay_own_action)
+    mw.reviewer.more_tool_bar.addAction(stop_action)
+    mw.reviewer.more_tool_bar.addSeparator()
+    mw.reviewer.more_tool_bar.addAction(Say_action)
+    mw.reviewer.more_tool_bar.addSeparator()
+
+    spacerWidget2 =  QWidget(mw)
+    spacerWidget2.setMinimumWidth(64)
+    spacerWidget2.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+    spacerWidget2.setVisible(True)
+    mw.reviewer.more_tool_bar.addWidget(spacerWidget2)
+
+    mw.reviewer.more_tool_bar.addSeparator()
+    mw.reviewer.more_tool_bar.addAction(Show_action)
+    mw.reviewer.more_tool_bar.addAction(hint_action)
+    mw.reviewer.more_tool_bar.addAction(letter_action)
+    mw.reviewer.more_tool_bar.addSeparator()
+    
+    spacerWidget1 =  QWidget(mw)
+    spacerWidget1.setMinimumWidth(128)
+    spacerWidget1.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+    spacerWidget1.setVisible(True)
+    mw.reviewer.more_tool_bar.addWidget(spacerWidget1)
+    
     more_tool_bar_off()
 
 
@@ -790,6 +831,65 @@ addHook("reviewCleanup", next_card_toggle_off)
 addHook("unloadProfile", save_toolbars_visible)
 addHook("profileLoaded", load_toolbars_visible)
 
+_tooltipTimer = None
+_tooltipLabel = None
+
+def tooltip1(msg, period=5000, parent=None):
+    global _tooltipTimer, _tooltipLabel
+    class CustomLabel(QLabel):
+        def mousePressEvent(self, evt):
+            evt.accept()
+            self.hide()
+    if _tooltipTimer: 
+        closeTooltip1()
+        return
+    closeTooltip1()
+    aw = parent or mw.app.activeWindow() or mw
+    breakStringLen = 60
+    lab = CustomLabel("""\
+<table cellpadding=15>
+<tr>
+<td>&nbsp;</td>
+<td style='font-size:20px;'>
+%s
+</td>
+<td>&nbsp;</td>
+</tr>
+</table>""" % (textwrap.fill(msg,breakStringLen).replace('\n','<br>')), aw)
+    lab.setFrameStyle(QFrame.Panel)
+    lab.setLineWidth(1)
+    lab.setWindowFlags(Qt.ToolTip)
+#    p = QPalette()
+#    p.setColor(QPalette.Window, QColor("#feffc4"))
+#    lab.setPalette(p)  font-weight:bold;  <img src="%s"> os.path.join(icons_dir, 'question_mark.png'),
+#<span style='font-size:20px;word-wrap:break-word;width:450px;' >%s</span>  textwrap.fill(msg,40).replace('\n','<br>')
+    lab.setStyleSheet(
+        '''QLabel{
+background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #fff, stop:1 #ddd);
+border: 1px solid #aaa;
+}
+''')
+    leftCoordinate = min(min(len(msg),breakStringLen) * 4 + 60, aw.width() / 2)
+    lab.move(
+        aw.mapToGlobal(QPoint(aw.width() / 2 - leftCoordinate,  aw.height() / 2 - 50)))
+    lab.show()
+    _tooltipTimer = mw.progress.timer(
+        period, closeTooltip1, False)
+    _tooltipLabel = lab
+
+def closeTooltip1():
+    global _tooltipLabel, _tooltipTimer
+    if _tooltipLabel:
+        try:
+            _tooltipLabel.deleteLater()
+        except:
+            # already deleted as parent window closed
+            pass
+        _tooltipLabel = None
+    if _tooltipTimer:
+        _tooltipTimer.stop()
+        _tooltipTimer = None
+		
 def actionAddHint(note) :
 	st = DictionaryParser(note['Front']).format()
 	showHTML(st, Qt.NonModal)
