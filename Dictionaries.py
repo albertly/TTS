@@ -12,7 +12,7 @@ from .downloadaudio.downloaders.downloader import AudioDownloader
 from anki.utils import stripHTML, json
 from aqt import mw, utils
 import json
-version = '0.2.33 Release'
+version = '0.2.34 Release'
 
 def removeNonAscii(s): return "".join(i for i in s if ord(i)<128)
 
@@ -475,7 +475,7 @@ class WordNetParser() :
 			term = t.text
 			definition = child.find('./definition').text
 			p = child.find('./partofspeech')
-			if (p is None) :
+			if p is None or p.text is None :
 				partofspeech = 'A'
 			else :
 				partofspeech = p.text
