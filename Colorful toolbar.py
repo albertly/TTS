@@ -2,6 +2,10 @@
 # Copyright: Roland Sieker ( ospalh@gmail.com )
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
 # Images:
+# -*- mode: Python ; coding: utf-8 -*-
+# Copyright: Roland Sieker ( ospalh@gmail.com )
+# License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
+# Images:
 # most icons from Anki1
 # Exceptions:
 # study.png,
@@ -33,7 +37,7 @@ This Anki2 addon adds a standard tool bar (a QtToolBar) to the Anki
 main window. By default a few buttons (QActions) are added, more can
 be added by the user.
 """
-version = '0.2.28 Release'
+version = '0.2.30 Release'
 
 __version__ = "1.1.2"
 
@@ -149,6 +153,11 @@ def showHTML(html, modality=Qt.WindowModal):
 def actionReadSentence() :
 	TTS_read(LastSentence())
 
+def actionExampleHint() :
+	st = mw.reviewer.card.note()['Example']
+	if len(st) > 0 :
+		st = str_cir(st).ireplace(mw.reviewer.card.note()['Front'][1:], '_' * (len(mw.reviewer.card.note()['Front']) - 1)) 
+		tooltip1(st,10000)
 def actionLetter() :
 	tooltip1(mw.reviewer.card.note()['Front'][:1])
 	#utils.showInfo(mw.reviewer.card.note()['Front'][:1])
@@ -255,6 +264,7 @@ Say_action = QAction(mw)
 Show_action = QAction(mw)
 hint_action = QAction(mw)
 letter_action = QAction(mw)
+exHint_action = QAction(mw)
 
 def add_tool_bar():
     """
@@ -396,6 +406,14 @@ border-bottom: 1px solid #aaa;
     letter_action.setToolTip(_(u"First Letter Hint L"))
     mw.connect(letter_action, SIGNAL("triggered()"), actionLetter)
     mw.qt_tool_bar.addAction(letter_action)
+
+    exHint_action.setText(_(u"Ex. Hint"))
+    exHint_action.setShortcut(QKeySequence(Qt.Key_E))
+    exHint_action.setIcon(QIcon(os.path.join(icons_dir, 'file-help-icon.png')))
+    exHint_action.setToolTip(_(u"Example Hint E"))
+    mw.connect(exHint_action, SIGNAL("triggered()"), actionExampleHint)
+    mw.qt_tool_bar.addAction(exHint_action)
+
 	
 def add_more_tool_bar():
     """
