@@ -5,7 +5,7 @@
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
 #
 #   GoogleTTS plugin for Anki 2.0
-version = '0.2.20 Release'
+version = '0.2.23 Release'
 #
 #   Any problems, comments, please post in this thread:  (or email me: arthur@life.net.br )
 #
@@ -219,24 +219,11 @@ def playTTSFromText(text):
 ###########  TTS_read to recite the tts on-the-fly
 
 def TTS_read(text, language=TTS_language):
-#	utils.showInfo(text)
-#	text = text.decode('utf-8', 'ignore')
+
 	text = stripHTML(text.replace("\n", "")).encode('utf-8')
-#	utils.showInfo(text)
-#	if text.find('Â') != -1 :
-#		utils.showInfo('Found T')
-#		utils.showInfo(text)
-#	zzz = '\u00c2'
+
 	text = text.replace(chr(194)," ")
-#	if text.find(chr(194)) != -1 :		
-#		utils.showInfo('Found T0')
-#		utils.showInfo(text)
-#	for c in text:
-#		if ord(c) > 190 :
-#			utils.showInfo('Found T1')
-#			utils.showInfo(c)
-#			utils.showInfo(str(ord(c)))
-            	
+
 #	address = TTS_ADDRESS+'?tl='+language+'&q='+ quote_plus(text)
 	address = "http://api.ispeech.org/api/rest?apikey=8d1e2e5d3909929860aede288d6b974e&Speed=-3&format=mp3&action=convert&text="+ quote_plus(text)
 
@@ -420,49 +407,9 @@ def GTTSautoread(toread, automatic=automaticQuestions):
 				playTTSFromText(toread)
 			else:
 				TTS_read(toread,TTS_language)
-
-def GTTS_OnQuestion(self):
-	global self1
-	self1 = self
-	stopSpeech()
-	#utils.showInfo(self.card.model()['name'])
-	self.mw.qt_tool_bar.actions()[18].setDisabled(False)
-	self.mw.qt_tool_bar.actions()[16].setDisabled(False)
-	self.mw.qt_tool_bar.actions()[17].setDisabled(True)
-	self.mw.qt_tool_bar.actions()[11].setDisabled(True)
-	self.mw.qt_tool_bar.actions()[10].setDisabled(True)
-	self.mw.qt_tool_bar.actions()[7].setDisabled(True)
-	self.mw.qt_tool_bar.actions()[8].setDisabled(True)
-	self.mw.qt_tool_bar.actions()[6].setDisabled(True)
-	if self.card.template()['name'] != "Translation" :
-		self.mw.qt_tool_bar.actions()[14].setDisabled(True)
-		if self.card.template()['name'] == "Forward" :
-			self.mw.qt_tool_bar.actions()[18].setDisabled(True)
-			self.mw.qt_tool_bar.actions()[16].setDisabled(True)
-			self.mw.qt_tool_bar.actions()[7].setDisabled(True)
-			self.mw.qt_tool_bar.actions()[10].setDisabled(False)
-			self.mw.qt_tool_bar.actions()[8].setDisabled(False)
-			self.mw.qt_tool_bar.actions()[6].setDisabled(False)
-			Example_read(self.card.q())
-		else :
-			GTTSautoread(self.card.q(), automaticQuestions)
-			self.mw.qt_tool_bar.actions()[7].setDisabled(False)
-		self.web.eval("document.getElementById('qa').style.visibility='hidden'")
-
-#	self.web.eval("alert(document.getElementsByTagName('BODY')[0].innerHTML)")
-
-def GTTS_OnAnswer(self):
-	stopSpeech()
-	self.mw.qt_tool_bar.actions()[18].setDisabled(False)
-	self.mw.qt_tool_bar.actions()[16].setDisabled(False)
-	self.mw.qt_tool_bar.actions()[14].setDisabled(False)
-	self.mw.qt_tool_bar.actions()[10].setDisabled(False)
-	self.mw.qt_tool_bar.actions()[11].setDisabled(False)
-	self.mw.qt_tool_bar.actions()[8].setDisabled(False)
-	self.mw.qt_tool_bar.actions()[7].setDisabled(False)
-	self.mw.qt_tool_bar.actions()[6].setDisabled(False)
+				
+def ShowDefered(self):
 	tags = mw.reviewer.card.note().stringTags()
-#	utils.showInfo(mw.reviewer.card.note().stringTags())
 	checked = False
 	if self.card.template()['name'] == "Translation" :
 		if tags.find('pt') != -1 :
@@ -480,36 +427,75 @@ def GTTS_OnAnswer(self):
 		else :
 			checked = False
 			
-	self.web.eval("document.getElementById('qa').style.visibility='visible'")
 	if checked :
 		st1 = "$('#spanTags').attr('src','file:///" + os.path.join(icons_dir, 'emotion_unhappy.png').replace("\\", "\\\\") + "').show();"
 		self.mw.reviewer.web.eval(st1)
 		self.mw.qt_tool_bar.actions()[17].setIcon(QIcon(os.path.join(icons_dir, 'warning_red.png')))
-		tooltip("Defered")
+#		tooltip("Defered")
 	else :
 		self.mw.reviewer.web.eval("$('#spanTags').hide();")
 		self.mw.qt_tool_bar.actions()[17].setIcon(QIcon(os.path.join(icons_dir, 'warning.png')))
 		
 	self.mw.qt_tool_bar.actions()[17].setChecked(checked)
+	
+def GTTS_OnQuestion(self):
+	global self1
+	self1 = self
+	stopSpeech()
+	#utils.showInfo(self.card.model()['name'])
+	self.mw.qt_tool_bar.actions()[18].setDisabled(False)
+	self.mw.qt_tool_bar.actions()[16].setDisabled(False)
+	self.mw.qt_tool_bar.actions()[17].setDisabled(True)
+	self.mw.qt_tool_bar.actions()[11].setDisabled(True)
+	self.mw.qt_tool_bar.actions()[10].setDisabled(True)
+	self.mw.qt_tool_bar.actions()[7].setDisabled(True)
+	self.mw.qt_tool_bar.actions()[8].setDisabled(True)
+	self.mw.qt_tool_bar.actions()[6].setDisabled(True)
+	
+	if self.card.template()['name'] != "Translation" :
+		self.mw.qt_tool_bar.actions()[14].setDisabled(True)
+		if self.card.template()['name'] == "Forward" :
+			self.mw.qt_tool_bar.actions()[18].setDisabled(True)
+			self.mw.qt_tool_bar.actions()[16].setDisabled(True)
+			self.mw.qt_tool_bar.actions()[7].setDisabled(True)
+			self.mw.qt_tool_bar.actions()[10].setDisabled(False)
+			self.mw.qt_tool_bar.actions()[8].setDisabled(False)
+			self.mw.qt_tool_bar.actions()[6].setDisabled(False)
+			Example_read(self.card.q())
+		else :
+			GTTSautoread(self.card.q(), automaticQuestions)
+			self.mw.qt_tool_bar.actions()[7].setDisabled(False)
+		self.web.eval("document.getElementById('qa').style.visibility='hidden'")
+		
+		ShowDefered(self)
+
+#	self.web.eval("alert(document.getElementsByTagName('BODY')[0].innerHTML)")
+
+def GTTS_OnAnswer(self):
+	stopSpeech()
+	self.mw.qt_tool_bar.actions()[18].setDisabled(False)
+	self.mw.qt_tool_bar.actions()[16].setDisabled(False)
+	self.mw.qt_tool_bar.actions()[14].setDisabled(False)
+	self.mw.qt_tool_bar.actions()[10].setDisabled(False)
+	self.mw.qt_tool_bar.actions()[11].setDisabled(False)
+	self.mw.qt_tool_bar.actions()[8].setDisabled(False)
+	self.mw.qt_tool_bar.actions()[7].setDisabled(False)
+	self.mw.qt_tool_bar.actions()[6].setDisabled(False)
+#	utils.showInfo(mw.reviewer.card.note().stringTags())
+	
+	self.web.eval("document.getElementById('qa').style.visibility='visible'")
+	
+	ShowDefered(self)
+	
 	self.mw.qt_tool_bar.actions()[17].setDisabled(False)
 	
 	s = self1.card.note()['Front'] + ". " + self1.card.note()['Example']
-#	if self.card.template()['name'] == "Translation" :
-#		s = s + " " + self1.card.note()['Example']
-#	elif self.card.template()['name'] == "Forward" :
-#	else :
-#	
-#	stA = stripHTML(self.card.a())
-#	stQ = stripHTML(self.card.q())
-#	s = stA.replace(stQ,"")	
 	s = s.replace(".",". ")
-#	if self.card.template()['name'] == "Forward" :
-#	s = self.card.note()['Front'] + ". " + s
+
 	GTTSautoread(s, automaticAnswers)
 
 def stopSpeech():
 		try:
-#			subprocess.Popen.terminate(p[0])
 			param = ['KillProcess.exe']
 			subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT).communicate()
 		except:
@@ -519,26 +505,26 @@ def showHidden():
     self1.web.eval("document.getElementById('qa').style.visibility='visible'")
 
 ###########  WordCount_get 
-def WordCount_get(text):
-	text = stripHTML(text.replace("\n", " ")).encode('utf-8')
-	address = WORDCOUNT_ADDRESS + quote_plus(text) + '&method=SEARCH%5FBY%5FNAME'
-	response = urllib.urlopen(address) 
-	if 200 == response.code :
-		data = response.read() 
-		b1 = data.split('&',10)
-		b0 = b1[3].split('=')
-		b2 = b1[2].split('=')
-		utils.showInfo(str(round((float(b0[1])/float(b2[1])) * 100,2)) + "%" )
-	else :
-		utils.showInfo('Not found')
+##def WordCount_get(text):
+##	text = stripHTML(text.replace("\n", " ")).encode('utf-8')
+##	address = WORDCOUNT_ADDRESS + quote_plus(text) + '&method=SEARCH%5FBY%5FNAME'
+##	response = urllib.urlopen(address) 
+##	if 200 == response.code :
+##		data = response.read() 
+##		b1 = data.split('&',10)
+##		b0 = b1[3].split('=')
+##		b2 = b1[2].split('=')
+##		utils.showInfo(str(round((float(b0[1])/float(b2[1])) * 100,2)) + "%" )
+##	else :
+##		utils.showInfo('Not found')
 		
-def actionCount():
-#	try:
-	word = self1.card.note()['Front'].lower()
-	WordCount_get(word)	
-	utils.showInfo(str(round(100.0 *lines.index(word.encode('utf-8')) / len(lines),2)) + "%")		
-#	except:
-#		pass
+##def actionCount():
+###	try:
+#	word = self1.card.note()['Front'].lower()
+#	WordCount_get(word)	
+#	utils.showInfo(str(round(100.0 *lines.index(word.encode('utf-8')) / len(lines),2)) + "%")		
+##	except:
+##		pass
 		
 Reviewer._keyHandler = wrap(Reviewer._keyHandler, newKeyHandler, "before")
 Reviewer._showQuestion = wrap(Reviewer._showQuestion, GTTS_OnQuestion, "after")
@@ -603,5 +589,5 @@ def myfunc(self, b) :
 DeckStats.loadFin = wrap(DeckStats.loadFin, myfunc)
 
 
-lines = [line.strip().lower() for line in open('Book1.csv')]
-line = "0"
+##lines = [line.strip().lower() for line in open('Book1.csv')]
+##line = "0"
