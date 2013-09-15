@@ -12,7 +12,7 @@ from .downloadaudio.downloaders.downloader import AudioDownloader
 from anki.utils import stripHTML, json
 from aqt import mw, utils
 import json
-version = '0.2.34 Release'
+version = '0.2.36 Release'
 
 def removeNonAscii(s): return "".join(i for i in s if ord(i)<128)
 
@@ -116,7 +116,11 @@ class str_cir(str):
 		''' Behaves like S.replace(), but does so in a case-insensitive
 		fashion. '''
 		pattern = re.compile(re.escape(old),re.I)
-		return re.sub(pattern,new,self,count)
+		str = re.sub(pattern,new,self,count)
+		
+		pattern = re.compile(re.escape(old[0:-1]),re.I)
+		str = re.sub(pattern,new,str,count)
+		return str
 
 class GroupEntities() :
 	def __init__(self, data, fl) :
@@ -764,9 +768,11 @@ class DictionaryParser() :
 
 		html += "<div class='accordion'><h3><a class='f' href='#'><img src='" + Storage.base + "coll.ico'>&nbsp;Collins Thesaurus&nbsp;</a>" + collComm.format() + "</h3>"
 		html += "<div>" + coll.format() + "</div></div>"
-
-		html += "<div class='accordion'><h3><a href='#'><img src='" + Storage.base + "yourDictionary.ico'>&nbsp;YourDictionary</a></h3>"
-		html += "<div>" + yourDictionary.format() + "</div></div>"
+		
+		if len(yourDictionary.data) > 0 :
+			html += "<div class='accordion'><h3><a href='#'><img src='" + Storage.base + "yourDictionary.ico'>&nbsp;YourDictionary</a></h3>"
+			html += "<div>" + yourDictionary.format() + "</div></div>"
+			
 		if len(merriamWebsterThesaurus.data) > 0 :
 			html += "<div class='accordion'><h3><a href='#'><img src='" + Storage.base + "merriam.ico'>&nbsp;Merriam-Webster Thesaurus</a></h3>"
 			html += "<div>" + merriamWebsterThesaurus.format() + "</div></div>"
@@ -778,8 +784,9 @@ class DictionaryParser() :
 		html += "<div class='accordion'><h3><a href='#'><img src='" + Storage.base + "macmillan.ico'>&nbsp;Macmillan Thesaurus</a>" + macmillanThesaurus.formatStars() + "</h3>"
 		html += "<div>" + macmillanThesaurus.format() + "</div></div>"
 		
-		html += "<div class='accordion'><h3><a href='#'><img src='" + Storage.base + "wordnet.ico'>&nbsp;Word Net</a></h3>"
-		html += "<div>" + wordnet.format() + "</div></div>"
+		if len(wordnet.data) > 0 :
+			html += "<div class='accordion'><h3><a href='#'><img src='" + Storage.base + "wordnet.ico'>&nbsp;Word Net</a></h3>"
+			html += "<div>" + wordnet.format() + "</div></div>"
 		
 		synonims = Synonims()
 		html += "<br><hr>"
