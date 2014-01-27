@@ -5,7 +5,7 @@
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
 #
 #   GoogleTTS plugin for Anki 2.0
-version = '0.2.23 Release'
+version = '0.2.24 Release'
 #
 #   Any problems, comments, please post in this thread:  (or email me: arthur@life.net.br )
 #
@@ -377,8 +377,10 @@ def GetExamples(text) :
 		param = ['ParseYourDictionary.exe', text]
 		subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT).communicate()	
 
-def Example_read(text,exitme=0):
-	text = stripHTML(text.replace("\n", "")).encode('utf-8')
+def Example_read1(text,exitme=0):
+	text = stripHTML(text.replace("\n", "")).encode('utf-8').strip()
+	
+	# 
 	sen = sentence.getSentence(text)
 	if len(sen) == 0 :
 		if exitme == 1 :
@@ -391,6 +393,28 @@ def Example_read(text,exitme=0):
 			subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT).communicate()	
 		g = Google()
 		g.write(text)
+
+		Example_read1(text,1)
+	else :
+		TTS_read(sen,TTS_language)
+		
+def Example_read(text,exitme=0):
+	text = stripHTML(text.replace("\n", "")).encode('utf-8').strip()
+	sentence.getSentence(text)
+	# mw.col.decks.current()['name']
+	sen = text
+	if len(sen) == 0 :
+		if exitme == 1 :
+			TTS_read("No examples. %s" % (text),TTS_language)
+			return 
+		param = ['ParseYourDictionary.exe', text]
+		if subprocessing:
+			subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+		else:
+			subprocess.Popen(param, startupinfo=si, stdin=PIPE, stdout=PIPE, stderr=STDOUT).communicate()	
+		g = Google()
+		g.write(text)
+
 		Example_read(text,1)
 	else :
 		TTS_read(sen,TTS_language)
@@ -461,10 +485,14 @@ def GTTS_OnQuestion(self):
 			self.mw.qt_tool_bar.actions()[10].setDisabled(False)
 			self.mw.qt_tool_bar.actions()[8].setDisabled(False)
 			self.mw.qt_tool_bar.actions()[6].setDisabled(False)
-			Example_read(self.card.q())
+			if mw.col.decks.current()['name'] != "mydeck" :
+				Example_read1(self.card.note()['Front'])
+			else :
+				Example_read(self.card.note()['Front'])
 		else :
-			GTTSautoread(self.card.q(), automaticQuestions)
+			GTTSautoread(self.card.note()['Back'], automaticQuestions)
 			self.mw.qt_tool_bar.actions()[7].setDisabled(False)
+			self.mw.qt_tool_bar.actions()[14].setDisabled(False)
 		self.web.eval("document.getElementById('qa').style.visibility='hidden'")
 		
 		ShowDefered(self)
