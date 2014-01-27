@@ -12,7 +12,7 @@ from .downloadaudio.downloaders.downloader import AudioDownloader
 from anki.utils import stripHTML, json
 from aqt import mw, utils
 import json
-version = '0.2.36 Release'
+version = '0.2.38 Release'
 
 def removeNonAscii(s): return "".join(i for i in s if ord(i)<128)
 
@@ -24,24 +24,32 @@ class Google() :
 			with open(fullname, 'r') as f: content = f.readlines()
 		except IOError :
 			pass
-		url = u'http://translate.google.com//translate_a/ex?sl=en&tl=ru&q=' + word
+		#url = u'http://translate.google.com//translate_a/ex?sl=en&tl=ru&q=' + word
+		url = u'http://translate.google.com//translate_a/single?client=t&sl=en&tl=ru&dt=ex&q=' + word
 		user_agent = 'Mozilla/5.0'
 		request = urllib2.Request(url)
 		request.add_header('User-agent', user_agent)
 		response = urllib2.urlopen(request)
 		if response.code == 200 :
 			s = response.read()
+			if len(s) < 20 :
+				return
+			s = s.replace("[,,,,,,,,,,,,,[", "")
+			s = s.replace("]]]]", "]]")
+			s = s.replace(",,", ",\"\",")
+			s = s.replace(",,", ",\"\",")
+			#utils.showInfo(s)
+			#utils.showInfo(s[2500:])
 			j = json.loads(s)
-			
 			l = 0 
 			try :
-				l = len(j[0][0])
+				l = len(j)
 			except IndexError :
 				pass
 				
 			if l > 0 :
 				with open(fullname, "a") as f1:
-					for s in j[0][0] :
+					for s in j :
 						st = stripHTML(removeNonAscii(s[0])) + "\n"
 						try :
 							if not st in content :
