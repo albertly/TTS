@@ -25,10 +25,12 @@ class CardStats(object):
         dock.setObjectName(title)
         dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         dock.setFeatures(QDockWidget.DockWidgetClosable)
+
         dock.setWidget(w)
         if mw.width() < 600:
             mw.resize(QSize(600, mw.height()))
         mw.addDockWidget(Qt.RightDockWidgetArea, dock)
+#        mw.mainLayout.addWidget(dock)
         return dock
 
     def _remDockable(self, dock):
