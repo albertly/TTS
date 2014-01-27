@@ -2,10 +2,6 @@
 # Copyright: Roland Sieker ( ospalh@gmail.com )
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
 # Images:
-# -*- mode: Python ; coding: utf-8 -*-
-# Copyright: Roland Sieker ( ospalh@gmail.com )
-# License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
-# Images:
 # most icons from Anki1
 # Exceptions:
 # study.png,
@@ -22,6 +18,7 @@ from PyQt4.QtGui import QAction, QIcon, QMenu, QToolBar
 import os
 import textwrap
 from GoogleTTS import *
+from Card_Info_During_Review import cardStats
 from Dictionaries import *
 from anki.hooks import wrap, addHook
 from anki.lang import _
@@ -37,7 +34,7 @@ This Anki2 addon adds a standard tool bar (a QtToolBar) to the Anki
 main window. By default a few buttons (QActions) are added, more can
 be added by the user.
 """
-version = '0.2.30 Release'
+version = '0.2.31 Release'
 
 __version__ = "1.1.2"
 
@@ -80,8 +77,13 @@ def actionF5():
 	TTS_read(mw.reviewer.card.note()['Example'])
 def actionDef():
 	Example_Def(mw.reviewer.card.note()['Front'])		
+	
 def actionExample():
-	Example_read(mw.reviewer.card.note()['Front'])
+#	if mw.col.decks.current()['name'] != "mydeck" :
+	Example_read1(mw.reviewer.card.note()['Front'])
+#	else :
+#		Example_read(mw.reviewer.card.note()['Front'])
+
 def actionRepeat():
 	Example_Repeat(mw.reviewer.card.note()['Front'])	
 def stopProccess():
@@ -159,7 +161,7 @@ def actionExampleHint() :
 		st = str_cir(st).ireplace(mw.reviewer.card.note()['Front'][1:], '_' * (len(mw.reviewer.card.note()['Front']) - 1)) 
 		tooltip1(st,10000)
 def actionLetter() :
-	tooltip1(mw.reviewer.card.note()['Front'][:1])
+	tooltip1(mw.reviewer.card.note()['Front'][:2])
 	#utils.showInfo(mw.reviewer.card.note()['Front'][:1])
 		
 def actionDefer() :
@@ -265,6 +267,7 @@ Show_action = QAction(mw)
 hint_action = QAction(mw)
 letter_action = QAction(mw)
 exHint_action = QAction(mw)
+cardStats_action = QAction(mw)
 
 def add_tool_bar():
     """
@@ -414,6 +417,19 @@ border-bottom: 1px solid #aaa;
     mw.connect(exHint_action, SIGNAL("triggered()"), actionExampleHint)
     mw.qt_tool_bar.addAction(exHint_action)
 
+    spacerWidget3 =  QWidget(mw)
+    spacerWidget3.setMinimumWidth(128)
+    spacerWidget3.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+    spacerWidget3.setVisible(True)
+    mw.qt_tool_bar.addWidget(spacerWidget3)
+
+    cardStats_action.setText("Card Stats")
+    cardStats_action.setCheckable(True)
+#    cardStats_action.setShortcut(QKeySequence(Qt.Key_L))
+    cardStats_action.setIcon(QIcon(os.path.join(icons_dir, 'calculator.png')))
+#    cardStats_action.setToolTip(_(u"First Letter Hint L"))
+    mw.connect(cardStats_action, SIGNAL("toggled(bool)"), cardStats)
+    mw.qt_tool_bar.addAction(cardStats_action)
 	
 def add_more_tool_bar():
     """
@@ -436,10 +452,11 @@ border: none;
 border-bottom: 1px solid #aaa;
 }
 ''')
-    mw.reviewer.more_tool_bar.setFloatable(True)
+    mw.reviewer.more_tool_bar.setFloatable(False)
     mw.reviewer.more_tool_bar.setMovable(True)
     # Todo: get index of the bottom web button thingy.
     mw.mainLayout.insertWidget(2, mw.reviewer.more_tool_bar)
+#    mw.addToolBar(Qt.BottomToolBarArea, mw.more_tool_bar)
     # Add the actions here
 #    mw.reviewer.more_tool_bar.addAction(edit_current_action)
 #    mw.reviewer.more_tool_bar.addAction(toggle_mark_action)
